@@ -9593,8 +9593,8 @@ module.exports = yeast;
 
 // start 1and1chat js
 //var ioServer = "https://io.egp.1and1chat.com";
-var ioServer = "https://app.socket.com.ng";
-var chatServer = "https://api.socket.com.ng"; 
+var ioServer = "https://ewars.onrender.com";
+var chatServer = "https://app.socket.com.ng"; 
 //var chatServer = "https://egp.1and1chat.com"; 
 window.socket = window.io(ioServer, { autoConnect: false }); // establish connection to socket server
 //socket.auth = { content }; // set socket authentication with content var

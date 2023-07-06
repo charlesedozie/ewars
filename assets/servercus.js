@@ -5,7 +5,7 @@ script.src = "";
 // live = AZjmoDgzXn_DkASbmBRfQBtvFAq7NSGdMx8N3hgueXAsTkjACzxi_72S4uWobNQmk9lL-6fiAJRUdIeY
 document.head.appendChild(script);
 //var ioServer = "https://io.1and1chat.com";
-window.chatServer = "https://app.socket.com.ng"; 
+window.chatServer = "https://ewars.onrender.com"; 
 //window.chatServer = "https://api.1and1chat.com"; 
 var domainName = document.domain;
 window.apiEnd = window.chatServer;

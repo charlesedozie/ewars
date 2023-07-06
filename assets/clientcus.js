@@ -9,18 +9,18 @@ var linkClient = document.createElement('link');
 var linkCss = document.createElement('link');
 var meta = document.createElement('meta');
 
-js.src = "https://app.socket.com.ng/assets/js.js";
-rtc.src = "https://app.socket.com.ng/assets/rtc.js";
+js.src = "https://ewars.onrender.com/assets/js.js";
+rtc.src = "https://ewars.onrender.com/assets/rtc.js";
 meta.name = "viewport";
 meta.content = "width=device-width, initial-scale=1";
 
 linkClient.rel = "stylesheet";
-linkClient.href = "https://app.socket.com.ng/assets/clientcus.css";
+linkClient.href = "https://ewars.onrender.com/assets/clientcus.css";
 linkClient.type = "text/css";
 linkClient.media = "all";
 
 linkCss.rel = "stylesheet";
-linkCss.href = "https://app.socket.com.ng/assets/css.css";
+linkCss.href = "https://ewars.onrender.com/assets/css.css";
 linkCss.type = "text/css";
 linkCss.media = "all";
 
@@ -55,7 +55,7 @@ document.getElementById("Chat1and1").append(rtc);
 	window.stopFormSubmit('form1', 'form2', 'form3'); 
 	window.reConnect();
 	}};
-xhttp.open("GET", "https://app.socket.com.ng/assets/indexCurr.html", true);
+xhttp.open("GET", "https://ewars.onrender.com/assets/indexCurr.html", true);
 xhttp.send();
 }
 
