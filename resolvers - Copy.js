@@ -250,7 +250,48 @@ if (!args.input.description || args.input.description === '') {result.msg = resu
 //result.status = 1; result.msg = "Message Submitted"; return result;
 
  }
+    if(parseInt(args.input.formid) === 137){ // create fiscal year
+if(checkSub.status === false){	result.status = 0; result.msg = "Subscription Required "; return result;}
+        //parseInt(args.input.frmtype) === 1 &&  // use to check whether new or edit
+      
+if (!args.input.fullname || args.input.fullname.length !== 4 || args.input.fullname === '' || isNaN(args.input.fullname)) {
+result.msg = result.msg+"Invalid: Title must be valid year, "; result.status = 0; }
+
+if(args.input.fullname){
+const minFullname = await Utils.validate(Utils.setValidation({fullname: args.input.fullname},{fullname: 'minLength:2|required'}), 'fullname').catch(function(e) {
+  result.msg = result.msg+e; });
+  if(!minFullname){result.status = 0; }}
+
+if(result.status === 0) {return result; }
+if(parseInt(args.input.id) !== 25){
+if(args.input.frmtype === 1){
+const titleExists = await Db.checkValue("SELECT status FROM egp_fiscalyear WHERE (status = 1 AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
+    if(titleExists > 0){
+      result.msg = 'Title exits'
+      result.status = 0; 
+      return result;
+    }  }  
+
+   if(args.input.frmtype === 2){
+    const titleExists = await Db.checkValue("SELECT status FROM egp_fiscalyear WHERE (status = 1 AND id <> "+con.escape(parseInt(args.input.id))+" AND inid <> "+con.escape(parseInt(args.input.id))+" AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
+  if(titleExists > 0){
+     result.msg = 'Title exits'
+    result.status = 0; 
+     return result;
+    }
+    await Db.dbUpdate("UPDATE egp_fiscalyear SET status = 2 WHERE ((id = "+con.escape(parseInt(args.input.id))+" || inid = "+con.escape(parseInt(args.input.id))+"))");
+  }  
+  if(result.status === 0){return result;}
  
+  //if(args.input.frmtype === 1){
+    const department = await Db.dbUpdate("INSERT INTO egp_fiscalyear (userid, title, inid, startdate, enddate) VALUES ("+
+      con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+con.escape(args.input.id)+", "+con.escape(args.input.zip)+", "+con.escape(args.input.address)+")");
+  //}
+}
+
+      result.status = 1;
+      result.msg = "Done";
+    } // end create fiscal year
 if(parseInt(args.input.formid) === 12 || parseInt(args.input.formid) === 193 || parseInt(args.input.formid) === 194 || parseInt(args.input.formid) === 114 || parseInt(args.input.formid) === 189 || parseInt(args.input.formid) === 165 || parseInt(args.input.formid) === 164 || parseInt(args.input.formid) === 76){ // create department
 if (!args.input.fullname || args.input.fullname === '') {
 result.msg = result.msg+"Title, "; result.status = 0; }
@@ -1085,6 +1126,9 @@ id: "pubbid"+item.id
 });
 return parsed;} // end bid destials
 
+if(siteListId === 78){  // list upcoming conferences
+return await Db.query("SELECT videoconf.id AS itemId, videoconf.inid, videoconf.title, videoconf.uuid AS id, videoconf.conftype AS address, videoconf.starttime AS city, videoconf.duration AS total, videoconf.startdate AS date, timezone.title AS msg, videoconf.description, confurl.uuid AS fullname FROM videoconf INNER JOIN timezone ON timezone.id = videoconf.timezone INNER JOIN confurl ON (confurl.confid = videoconf.id OR confurl.confid = videoconf.inid) WHERE videoconf.status = 1 AND videoconf.domain = " + con.escape(domain) +" AND videoconf.startdate > CURDATE() ORDER BY videoconf.title ASC" );  } // end COUNTRY list for form
+      
 if(siteListId === 136){ // list settings pub
 let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM module WHERE (groupid = 3 OR id IN (111, 110)) ORDER BY title ASC");
 var parsed = dbresult.map(async function (item) {
@@ -1103,7 +1147,178 @@ id: "pub"+item.id
 return parsed;
 } // end list settings pub
 
-  
+     
+if(siteListId === 111){ // list awarded contracts
+let dbresult = await Db.query("SELECT egp_award.id AS itemId, amount, orgname.title AS address, egp_award.inid, egp_plan.title, egp_award.uuid AS id, DATE_FORMAT(awarddate, '%M %d %Y') AS awarddate FROM egp_award INNER JOIN egp_plan ON (egp_plan.id=egp_award.planid OR egp_plan.inid=egp_award.planid) INNER JOIN orgname ON (orgname.id =egp_award.awardedto) WHERE egp_award.status=1 ORDER BY egp_award.awarddate DESC");
+var parsed = dbresult.map(async function (item) {
+let status = null;
+status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(siteListId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1")            
+return {
+itemId: item.itemId,
+inid: item.inid,
+description: item.awarddate,
+title: item.title,
+status: status,
+address: item.address,
+id: "pubawadred"+item.id,
+zip: item.amount
+}
+});
+return parsed;
+} // end list awarded
+      
+if(siteListId === 110){ // list news
+let section=1;
+let newsBody="";
+if(args.section){section=parseInt(args.section);}
+let dbresult = await Db.query("SELECT id AS itemId, inid, title, teaser, description, typeid AS planid, uuid AS id FROM egp_news WHERE  status = 1 AND typeid = "+con.escape(section)+" ORDER BY itemid DESC LIMIT 0,3");
+
+var parsed = dbresult.map(async function (item) {
+let status = null;
+if(section === 1){newsBody= item.description;}
+return {
+itemId: item.itemId,
+inid: item.inid,
+description: newsBody,
+title: item.title,
+status: status,
+city: item.teaser,
+planid: item.planid,
+id: "pub"+item.id
+}
+});
+return parsed;
+} // end list settings pub
+     /*
+if(siteListId === -110){ // list news three
+let dbresult = await Db.query("SELECT id AS itemId, inid, title, teaser, description, uuid AS id FROM egp_news WHERE  status = 1 ORDER BY itemid DESC LIMIT 0,3");
+var parsed = dbresult.map(async function (item) {
+let status = null;
+
+return {
+itemId: item.itemId,
+inid: item.inid,
+description: item.description,
+title: item.title,
+status: status,
+city: item.teaser,
+id: "pubnewshome"+item.id
+}
+});
+return parsed;
+} // end list settings pub
+*/
+
+if(siteListId === 116){  // list side menu pub
+return await Db.query("SELECT id AS itemId, inid, title, description, uuid AS id FROM module WHERE groupid = 1 ORDER BY ordering ASC" );  } // end COUNTRY list for form
+
+if(siteListId === 105){ // list project
+let dbresult = await Db.query("SELECT egp_project.govt, egp_project.bank, egp_project.fiscalyear AS yearid, egp_fiscalyear.title AS fiscalyear, egp_project.disbursed, egp_project.agreementno, egp_project.total, egp_project.id AS itemId, egp_project.inid, egp_project.title, egp_project.description, egp_project.uuid AS id FROM egp_project INNER JOIN egp_fiscalyear ON (egp_project.fiscalyear=egp_fiscalyear.id OR egp_project.fiscalyear=egp_fiscalyear.inid) WHERE egp_project.status = 1 AND egp_fiscalyear.status=1 AND (egp_project.id IN (SELECT rowid FROM itemstatus WHERE tbl = 105 AND itemstatus.status = 1) OR egp_project.inid IN (SELECT rowid FROM itemstatus WHERE tbl = 105 AND itemstatus.status = 1)) ORDER BY egp_fiscalyear.title DESC");
+var parsed = dbresult.map(async function (item) {
+let status = 1;	 
+
+let compos = await Db.query("SELECT COUNT(id) AS itemNo, entityid FROM egp_plan WHERE projectid="+(con.escape(item.inid !== 0) ? item.inid : item.itemId)+" AND egp_plan.id NOT IN (SELECT rowid FROM itemstatus WHERE tbl = 105 AND itemstatus.status = 1) GROUP BY entityid" ); 
+
+var parsedD = compos.map(async function (itemD) {
+return {
+s1id: Utils.UUID(),
+s1inid: itemD.itemNo,
+s1description: "",
+s1status: 1,
+s1itemId: itemD.itemNo,
+s1title: await getTitle("SELECT title FROM egp_agency WHERE status = 1 AND (id = "+con.escape(itemD.entityid)+" || inid = "+con.escape(itemD.entityid)+") ORDER BY id DESC LIMIT 0, 1"),
+}});
+
+return {
+itemId: item.itemId,
+inid: item.inid,
+province: "item.fiscalyear",
+title: item.title,
+status: status,
+description: item.description,
+id: "prghme"+item.id,
+zip: item.total,
+stringfour: item.bank,
+total: item.yearid,
+city: item.govt,
+address:item.disbursed,
+province:item.fiscalyear, 
+subone:parsedD,
+}
+});
+return parsed;
+} // end list project
+if(siteListId === 137){ // list fiscal year
+let dbresult = await Db.query("SELECT id AS itemId, inid, title, DATE_FORMAT(startdate, '%M %d %Y') AS zip, DATE_FORMAT(enddate, '%M %d %Y') AS address, uuid AS id FROM egp_fiscalyear WHERE status = 1 ORDER BY title ASC");
+var parsed = dbresult.map(async function (item) {
+let status = null;
+return {
+itemId: item.itemId,
+inid: item.inid,
+description: "",
+title: item.title,
+status: 1,
+domain: "",
+id: item.id,
+zip: item.zip,
+address: item.address
+}
+});
+return parsed;
+} // end list fiscal year
+if(siteListId === 104){ // list complete plan
+let dbresult = await Db.query("SELECT egp_plan.id AS itemId, egp_plan.inid, egp_plan.title, egp_plan.projectid AS total, egp_plan.solicitationid AS country, egp_solicitation.title AS solicitation, egp_plan.type AS typeid, egp_plan.entityid AS stringone, egp_plan.uuid AS id, egp_agency.title AS address, egp_type.title AS city, egp_fiscalyear.title AS description, egp_project.title AS stringthree FROM egp_plan INNER JOIN egp_project ON (egp_plan.projectid=egp_project.id OR egp_plan.projectid=egp_project.inid) INNER JOIN egp_solicitation ON (egp_plan.solicitationid=egp_solicitation.id OR egp_plan.solicitationid=egp_solicitation.inid) INNER JOIN egp_type ON (egp_plan.type=egp_type.id OR egp_plan.type=egp_type.inid) INNER JOIN egp_agency ON (egp_plan.entityid=egp_agency.id OR egp_plan.entityid=egp_agency.inid) INNER JOIN egp_fiscalyear ON (egp_fiscalyear.id=egp_project.fiscalyear OR egp_fiscalyear.inid=egp_project.fiscalyear) WHERE egp_plan.status=1 AND egp_project.status=1  AND egp_solicitation.status=1 AND egp_type.status=1 AND egp_agency.status=1 AND egp_fiscalyear.status=1 AND (egp_plan.id IN (SELECT rowid FROM itemstatus WHERE tbl = 104 AND itemstatus.status = 1) OR egp_plan.inid IN (SELECT rowid FROM itemstatus WHERE tbl = 104 AND itemstatus.status = 1))  AND (egp_agency.id IN (SELECT rowid FROM itemstatus WHERE tbl = 106 AND itemstatus.status = 1) OR egp_agency.inid IN (SELECT rowid FROM itemstatus WHERE tbl = 106 AND itemstatus.status = 1)) ORDER BY egp_fiscalyear.title, egp_plan.title ASC");
+var parsed = dbresult.map(async function (item) {
+										  
+let status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(siteListId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1")            
+
+let planStatus='Pre-Bid';
+let planStatusId=0;
+let bidding = await Db.query("SELECT DATE_FORMAT(enddate, '%M %d %Y') AS enddate, endtime, DATE_FORMAT(startdate, '%M %d %Y') AS startdate, starttime, description FROM egp_bidding WHERE planid="+con.escape(item.inid === 0 ? item.itemId : item.inid)+" AND enddate > CURDATE() AND status=1");
+if(bidding && bidding.length > 0) {planStatus='Bidding'; planStatusId=1;} 
+
+let awarded = await Db.query("SELECT amount, orgname.title AS address, DATE_FORMAT(awarddate, '%M %d %Y') AS awarddate FROM egp_award INNER JOIN egp_plan ON (egp_plan.id=egp_award.planid OR egp_plan.inid=egp_award.planid) INNER JOIN orgname ON (orgname.userid =egp_award.awardedto) WHERE egp_award.status=1 AND orgname.status=1 AND egp_plan.status=1 AND planid="+con.escape(item.inid === 0 ? item.itemId : item.inid)+" ORDER BY egp_award.id DESC");
+if(awarded && awarded.length > 0) {planStatus='Awarded'; planStatusId=2;} 
+
+let complete = await Db.query("SELECT progress FROM egp_progress WHERE planid="+con.escape(item.inid === 0 ? item.itemId : item.inid)+" AND status=1");
+if(complete && complete.length > 0 && parseInt(complete[0].progress) === 100) {planStatus='Completed'; planStatusId=3} 
+
+
+
+
+return {
+itemId: item.itemId,
+inid: item.inid,
+title: item.title,
+status: status,
+total: item.total,
+id: "puplan"+item.id,
+country: item.country,
+typeid: item.typeid,
+stringone: item.stringone,
+address: item.address,
+city: item.city,
+description: item.description,
+stringthree: item.stringthree,
+stringfour: planStatus,
+stringsix: item.solicitation,
+stringfive: planStatusId,
+
+string12: ((typeof awarded !== 'undefined' && awarded.length > 0 && typeof awarded[0].awarddate !== 'undefined') ? awarded[0].awarddate : ""),
+string13: ((typeof awarded !== 'undefined' && awarded.length > 0 && typeof awarded[0].address !== 'undefined') ? awarded[0].address : ""),
+zip: ((typeof awarded !== 'undefined' && awarded.length > 0 && typeof awarded[0].amount !== 'undefined') ? awarded[0].amount : ""),
+string14: ((typeof bidding !== 'undefined' && bidding.length > 0 && typeof bidding[0].enddate !== 'undefined') ? bidding[0].enddate : ""),
+string15: ((typeof bidding !== 'undefined' && bidding.length > 0 && typeof bidding[0].endtime !== 'undefined') ? bidding[0].endtime : ""),
+
+string16: ((typeof bidding !== 'undefined' && bidding.length > 0 && typeof bidding[0].startdate !== 'undefined') ? bidding[0].startdate : ""),
+string17: ((typeof bidding !== 'undefined' && bidding.length > 0 && typeof bidding[0].starttime !== 'undefined') ? bidding[0].starttime : ""),
+string18: ((typeof bidding !== 'undefined' && bidding.length > 0 && typeof bidding[0].description !== 'undefined') ? bidding[0].description : ""),
+
+
+}
+});
+return parsed;
+} // end list plan
 /*
 if(siteListId === 120){ // list bid
 let dbresult = await Db.query("SELECT egp_plan.id AS itemId, egp_solicitation.title AS solicitation, egp_type.title AS city, egp_plan.type AS typeid, DATE_FORMAT(egp_bidding.startdate, '%M %d %Y') AS stringone, egp_bidding.starttime AS stringtwo, DATE_FORMAT(egp_bidding.enddate, '%M %d %Y') AS stringthree, egp_bidding.endtime AS stringfour, egp_plan.inid, egp_plan.title, egp_agency.title AS address, egp_bidding.uuid AS id FROM egp_plan INNER JOIN egp_agency ON (egp_agency.id=egp_plan.entityid OR egp_agency.inid=egp_plan.entityid) INNER JOIN egp_solicitation ON (egp_solicitation.id=egp_plan.solicitationid OR egp_solicitation.inid=egp_plan.solicitationid) INNER JOIN egp_bidding ON (egp_bidding.planid= egp_plan.inid OR egp_bidding.planid=egp_plan.id) INNER JOIN egp_type ON (egp_type.id=egp_plan.type OR egp_type.inid=egp_plan.type) WHERE egp_plan.status = 1 AND egp_bidding.enddate > CURDATE() AND egp_agency.status=1 AND egp_type.status=1 AND egp_bidding.status = 1 AND egp_solicitation.status=1 AND (egp_plan.id IN (SELECT rowid FROM itemstatus WHERE tbl = 104 AND itemstatus.status = 1) OR egp_plan.inid IN (SELECT rowid FROM itemstatus WHERE tbl = 104 AND itemstatus.status = 1)) ORDER BY egp_plan.title ASC");
@@ -1222,6 +1437,38 @@ if(auth.status){
             result = emptyResult;
             let listId = parseInt(args.listid);
  
+if(listId === 94){ // list IM
+let IM = await Db.query("SELECT im.inid, userid, im.id AS itemId, DATE_FORMAT(date, '%M %d %Y %T %p') AS date, im.description, im.uuid AS id, recid, im.pairid FROM im WHERE status = 1 AND (im.userid = "+con.escape(auth.userId)+" OR im.recid = "+con.escape(auth.userId)+") AND im.pairid IN (SELECT id FROM impair WHERE impair.status = 1 AND (impair.userid = "+con.escape(auth.userId)+" OR impair.recid = "+con.escape(auth.userId)+")) AND im.id NOT IN (SELECT editid FROM itemstatus WHERE itemstatus.tbl = 94 AND userid = "+con.escape(auth.userId)+") ORDER BY im.id DESC");
+if(IM.length > 0){
+var parsed = IM.map(async function (item) { 
+let reply = await Db.query("SELECT userid, description, id AS itemId, pairid, uuid AS id FROM imslave WHERE status=1 AND pairid =  " + con.escape(item.pairid) + " ORDER BY imslave.id DESC"); 
+var parsedD = reply.map(async function (itemD) {
+return {
+s1id: itemD.id,
+s1inid: itemD.inid,
+s1description: itemD.description,
+s1status: (itemD.userid === auth.userId ? 0 : 1),
+s1itemId: itemD.itemId,
+s1title: itemD.userid,
+}});
+return {
+id: item.id,
+inid: item.pairid,
+description: item.description,
+itemId: item.itemId,
+title: (item.userid === auth.userId ? await Utils.GetAgentEmail(item.recid) : await Utils.GetAgentEmail(item.userid)),
+//address: (item.userid === auth.userId ? "me" : await Utils.GetAgentEmail(item.userid)),
+//city: (item.userid === auth.userId ? "me" : await Utils.GetAgentName(item.userid)),
+total: (item.userid === auth.userId ? item.recid : item.userid),
+date: item.date,
+msg: (item.userid === auth.userId ? await Utils.GetAgentName(item.recid) : await Utils.GetAgentName(item.userid)),
+subone: parsedD
+}});
+}
+return parsed;
+//return await getIM(inid, auth.userId);
+} 
+ // end list im             
          //   if(auth.typeId === 1){// for admin
               if(listId === 2){ // list agents
                 let dbresult = await Db.query("SELECT user.id AS itemId, user.inid AS inid, user.username, user.usernameiv, useprofile.fullname, gender.title, user.uuid AS id, statuscode.title AS usertype, useprofile.phone FROM user INNER JOIN useprofile ON useprofile.uuid = user.uuid INNER JOIN statuscode ON statuscode.id = user.typeid INNER JOIN gender ON gender.id = useprofile.gender WHERE user.status=1 AND user.typeid <> 1 ORDER BY useprofile.fullname ASC");
@@ -1260,7 +1507,25 @@ statusD =  await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 
               return parsed;
             } // end list agents
 
-   // end AGENTS subscription
+            if(listId === 57){ // list AGENTS subscription
+                let tempTotal = {}
+                let dbresult = await Db.query("SELECT user.id AS itemId, user.inid AS inid, user.username, user.usernameiv, useprofile.fullname, gender.title, user.uuid AS id FROM user INNER JOIN useprofile ON useprofile.uuid = user.uuid INNER JOIN gender ON gender.id = useprofile.gender WHERE user.status=1 AND user.typeid <> 1 AND useprofile.status = 1 AND gender.status = 1 ORDER BY fullname ASC");
+                var parsed = dbresult.map(async function (item) {
+               let status = null;
+              status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(parseInt(listId))+" AND rowid = "+con.escape(parseInt(item.inid > 0 ? item.inid : item.itemId))+") ORDER BY id DESC LIMIT 0, 1")
+          
+                  return {
+                      id: "sub"+item.id,
+                      inid: item.inid,
+                      username: Utils.decrypt({iv: item.usernameiv, content: item.username}),
+                      fullname: item.fullname,
+                      title: item.title,
+                      status: status,
+                      itemId: item.itemId
+                  }
+              });
+              return parsed;
+          } // end AGENTS subscription
           /*
 		    if(listId === 58){ // list get number of agents on subscription
               let agentsdepartment = [];
@@ -1387,6 +1652,178 @@ address: item.address
 return parsed;
 } // end list fiscal year
 
+
+if(listId === 104){ // list pp
+let dbresult = await Db.query("SELECT egp_plan.id AS itemId, egp_plan.inid, egp_plan.title AS title, egp_agency.title AS description, egp_plan.uuid AS id, egp_plan.projectid, egp_plan.solicitationid, egp_plan.entityid, egp_plan.type, egp_agency.officer AS officer FROM egp_plan INNER JOIN egp_project ON (egp_project.id = egp_plan.projectid OR egp_project.inid=egp_plan.projectid) INNER JOIN egp_solicitation ON (egp_solicitation.id=egp_plan.solicitationid OR egp_solicitation.inid=egp_plan.solicitationid) INNER JOIN egp_agency ON (egp_agency.id=egp_plan.entityid OR egp_agency.inid=egp_plan.entityid) WHERE egp_plan.status = 1 AND egp_agency.status=1 AND egp_solicitation.status=1 AND egp_project.status=1 ORDER BY egp_plan.title ASC");
+var parsed = dbresult.map(async function (item) {
+let status = null;
+status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1")
+
+let progress = await Db.query("SELECT progress, amount FROM egp_progress WHERE status = 1 AND planid = "+con.escape(item.inid > 0 ? item.inid : item.itemId));  
+
+let award = await Db.query("SELECT awarddate AS date, effectivedate AS stringone, completiondate as stringtwo, awardedto AS stringthree, amount AS stringfour, actualcompletion AS stringfive FROM egp_award WHERE status = 1 AND planid = "+con.escape(item.inid > 0 ? item.inid : item.itemId)); 
+
+let bidding = await Db.query("SELECT startdate, enddate, endtime, starttime, description, openingdate, openingtime FROM egp_bidding WHERE status = 1 AND planid = "+con.escape(item.inid > 0 ? item.inid : item.itemId));  
+
+let intent = await Db.query("SELECT * FROM egp_intent WHERE planid = "+con.escape(item.inid > 0 ? item.inid : item.itemId));  
+
+return {
+itemId: item.itemId,
+inid: item.inid,
+description: ((typeof bidding !== 'undefined' && bidding.length > 0) ? bidding[0].description : ""),
+title: item.title,
+status: status,
+planid: parseInt(item.projectid),
+phone: parseInt(item.solicitationid),
+total: item.entityid,
+country: item.type,
+address: item.description,
+id:item.id,
+zip:((typeof progress !== 'undefined' && progress.length > 0) ? progress[0].progress : 0),
+stringsix:((typeof progress !== 'undefined' && progress.length > 0) ? progress[0].amount : 0),
+string13: item.officer,
+
+stringone: ((typeof award !== 'undefined' && award.length > 0) ? award[0].stringone : 0),
+stringseven: ((typeof award !== 'undefined' && award.length > 0) ? award[0].date : 0),
+stringtwo: ((typeof award !== 'undefined' && award.length > 0) ? award[0].stringtwo : 0),
+stringthree: ((typeof award !== 'undefined' && award.length > 0) ? award[0].stringthree : 0),
+stringfour: ((typeof award !== 'undefined' && award.length > 0) ? award[0].stringfour : 0),
+stringfive: ((typeof award !== 'undefined' && award.length > 0) ? award[0].stringfive : 0),
+
+stringeigth: ((typeof bidding !== 'undefined' && bidding.length > 0) ? bidding[0].startdate : 0),
+stringnine: ((typeof bidding !== 'undefined' && bidding.length > 0) ? bidding[0].endtime : 0),
+city: ((typeof bidding !== 'undefined' && bidding.length > 0) ? bidding[0].starttime : 0),
+province: ((typeof bidding !== 'undefined' && bidding.length > 0) ? bidding[0].enddate : 0),
+stringten: ((typeof bidding !== 'undefined' && bidding.length > 0) ? bidding[0].openingdate : 0),
+string12: ((typeof bidding !== 'undefined' && bidding.length > 0) ? bidding[0].openingdate : 0),
+stringeleven: ((typeof bidding !== 'undefined' && bidding.length > 0) ? bidding[0].openingtime : 0),
+
+addnew:((typeof intent !== 'undefined') ? intent.length : 0)
+
+}
+});
+return parsed;
+} // end list pp
+
+
+
+        if(listId === 110){ // list news
+          let dbresult = await Db.query("SELECT egp_news.id AS itemId, egp_news.typeid AS planid, egp_news.inid, egp_news.title, egp_news.description, egp_news.uuid AS id, contenttype.title AS content FROM egp_news INNER JOIN contenttype ON (contenttype.id = egp_news.typeid) WHERE egp_news.status = 1 ORDER BY egp_news.id DESC");
+      var parsed = dbresult.map(async function (item) {
+              return {
+                itemId: item.itemId,
+                inid: item.inid,
+                description: item.description,
+                title: item.title,
+                address: "",
+                zip: item.content,
+                id: item.id,
+                planid: item.planid,
+            }
+        });
+        return parsed;
+      } // end list news
+
+      if(listId === 112){ // list bpp law
+        let dbresult = await Db.query("SELECT id AS itemId, inid, title, description, uuid AS id FROM egp_bpplaw WHERE status = 1 AND type = " + con.escape(parseInt(args.sectionid)));
+        var parsed = dbresult.map(async function (item) {  
+          return { 
+              itemId: item.itemId,
+              inid: item.inid,
+              description: item.description,
+              title: item.title,
+              status: 1,
+              domain: item.domain,
+              id: item.id
+          }
+      });
+      return parsed;
+    } // end bpp law
+        if(listId === 106){ // list agency userid = " + con.escape(auth.userId)+"
+	let dbresult;
+	if(parseInt(auth.typeId) === 1){
+    dbresult = await Db.query("SELECT id AS itemId, inid, title, description, domain, officer, uuid AS id FROM egp_agency WHERE status = 1 ORDER BY title ASC");}
+	   else {dbresult = await Db.query("SELECT id AS itemId, inid, title, description, domain, officer, uuid AS id FROM egp_agency WHERE status = 1 AND officer = "+con.escape(parseInt(auth.userId))+" ORDER BY title ASC");}
+		  
+		  
+          var parsed = dbresult.map(async function (item) {
+let status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape(parseInt((item.inid > 0) ? item.inid : item.itemId))+") LIMIT 0, 1") 
+                   
+            return {
+                itemId: item.itemId,
+                inid: item.inid,
+                description: item.description,
+                title: item.title,
+                status: status,
+                domain: item.domain,
+                id: item.id,
+                city: item.officer,
+            }
+        });
+        return parsed;
+      } // end list 
+	    if(listId === 125){ // list plan status
+          let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM egp_plan_status WHERE status = 1 ORDER BY title ASC");
+          var parsed = dbresult.map(async function (item) {
+          let status = 1;
+                   
+            return {
+                itemId: item.itemId,
+                inid: item.inid,
+                description: "",
+                title: item.title,
+                status: "",
+                domain: "",
+                id: item.id
+            }
+        });
+        return parsed;
+      } // end list 
+      
+if(listId === 115){ // list suppliers
+let dbresult = await Db.query("SELECT user.id AS itemId, orgname.title, user.inid, user.uuid AS id FROM user INNER JOIN orgname ON orgname.userid=user.id WHERE user.status = 1 AND orgname.status = 1 AND user.typeid=5 ORDER BY orgname.title ASC");
+var parsed = dbresult.map(async function (item) {
+
+let status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1") 
+
+return {
+itemId: item.itemId,
+inid: item.inid,
+description: "",
+title: item.title,
+status: status,
+domain: "",
+id: item.id
+}
+});
+return parsed;
+
+    } // end list 
+if(listId === 105){ // list project
+let dbresult = await Db.query("SELECT egp_project.govt, egp_project.bank, egp_project.fiscalyear AS yearid, egp_fiscalyear.title AS fiscalyear, egp_project.disbursed, egp_project.agreementno , egp_project.total, egp_project.id AS itemId, egp_project.inid, egp_project.title, egp_project.description, egp_project.uuid AS id FROM egp_project INNER JOIN egp_fiscalyear ON (egp_project.fiscalyear=egp_fiscalyear.id OR egp_project.fiscalyear=egp_fiscalyear.inid) WHERE egp_project.status = 1 AND egp_fiscalyear.status=1 ORDER BY egp_fiscalyear.title DESC");
+var parsed = dbresult.map(async function (item) {
+
+let status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1")            
+
+
+return {
+itemId: item.itemId,
+inid: item.inid,
+description: "",
+title: item.title,
+status: status,
+description: item.description,
+id: item.id,
+zip: item.total,
+stringfour: item.bank,
+total: item.yearid,
+city: item.govt,
+address:item.disbursed,
+province:item.agreementno, 
+}
+});
+return parsed;
+    } // end list project
 	  /*
 	  if(listId === 123){ // list solicitation
         let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM egp_solicitation WHERE status = 1 ORDER BY title ASC");
@@ -1495,7 +1932,31 @@ return parsed;
         });
         return parsed;
       } // end list file repo
-	  	  
+	  
+if(listId === 78 || listId === 79 || listId === 81){ // list video conf
+let conftype = "video";
+if(listId === 79){ conftype = "podcast";}
+if(listId === 81){ conftype = "webinar";}
+          let dbresult = await Db.query("SELECT videoconf.id AS itemId, videoconf.inid, videoconf.title, videoconf.description, videoconf.uuid AS id, videoconf.starttime AS address, videoconf.duration AS phone, videoconf.startdate AS zip, videoconf.timezone AS total, record AS country, mode AS city, confurl.uuid AS fullname FROM videoconf INNER JOIN confurl ON (confurl.confid = videoconf.id OR confurl.confid = videoconf.inid) WHERE videoconf.status=1 AND videoconf.conftype = "+ con.escape(conftype)+" AND (videoconf.domain = 'def' || videoconf.domain=" + con.escape(auth.domainName) +") ORDER BY videoconf.title ASC");
+          var parsed = dbresult.map(async function (item) {
+          //let status = null;
+
+return {
+itemId: item.itemId,
+inid: item.inid,
+description: item.description,
+title: item.title,
+id: item.id,
+zip: item.zip,
+phone: item.phone, 
+address: item.address,
+city: item.city,
+fullname: item.fullname,
+total: item.total,
+country: item.country,
+} });
+        return parsed;
+      } // end list video conf	 	  
 	   if(listId === 68 || listId === 77){ // list send file repo
 	   let mediaFile = 0;
 let dbresult = await Db.query("SELECT filerepo.id AS itemId, filerepo.inid, filerepo.title, filerepo.description, filerepo.uuid AS id FROM filerepo WHERE mediafile = " + con.escape(mediaFile) +" AND filerepo.status=1 AND filerepo.id IN (SELECT rowid FROM itemstatus WHERE itemstatus.status =1 AND itemstatus.domain=" + con.escape(auth.domainName) +" AND itemstatus.tbl = 27) ORDER BY filerepo.title ASC");
@@ -1521,7 +1982,21 @@ subone: parsedD
 return parsed;
 
       } // end list send file repo
-	   if(listId === -2){ // get agent profile
+	   if(listId === -5){ // list conf participants
+let dbresult = await Db.query("SELECT id AS itemId, title, email, emailiv, uuid AS id, mode FROM videoconfparticipants WHERE status = 1 AND videoconfid = " + con.escape(parseInt(args.sectionid)) +" ORDER BY title ASC");
+var parsed = dbresult.map(async function (item) {
+return {
+itemId: item.itemId,
+province: Utils.decrypt({iv: item.emailiv, content: item.email}),
+username: item.title,
+description: item.id,
+address: item.mode,
+}
+});
+return parsed;
+
+      } // end list conf participants      
+          if(listId === -2){ // get agent profile
             //let dbresult = await Db.query("SELECT id, inid, fullname, gender, address, city, province, country, phone, uuid FROM useprofile INNER JOIN gender ON (gender.id = useprofile.gender OR gender.inid = useprofile.gender) WHERE useprofile.domain=" + con.escape(auth.domainName) +" AND useprofile.status=1 AND gender.status = 1");
             let dbresult = await Db.query("SELECT useprofile.id AS itemId, useprofile.inid, fullname, zip, gender, address, city, province, country, phone, useprofile.uuid AS id FROM useprofile INNER JOIN gender ON (gender.id = useprofile.gender OR gender.inid = useprofile.gender) WHERE useprofile.status=1 AND gender.status = 1 AND useprofile.userid = " + con.escape(auth.userId)+" ORDER BY id DESC LIMIT 0, 1");
 	 return dbresult;  }
@@ -1543,6 +2018,117 @@ return parsed;
             })
             return parsed;
              }
+ if(listId === 52){ //list pricing
+              //return await Db.query("SELECT id, inid, description, title, uuid FROM channels WHERE status = 1");
+              let dbresult = await Db.query("SELECT planid AS typeid, price AS title FROM pricing WHERE status = 1 ORDER BY typeid ASC");
+            return dbresult;
+             }
+             if(listId === 9){ // list settings
+             let dbresult = await Db.query("SELECT id AS itemId, inid, description, title, uuid AS id FROM module WHERE status = 1 AND parentid = 9 ORDER BY title ASC");
+             var parsed = dbresult.map(async function (item) {
+             let status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1");
+			
+			let userDesc = await Db.query("SELECT description FROM record WHERE status = 1 AND type = 9 AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+" LIMIT 0, 1");
+                  return {
+                    itemId: item.itemId,
+                    inid: item.inid,
+                    status: status,
+                    description: item.description,
+                    title: item.title,
+                    stringone: (userDesc.length > 0 && userDesc[0].description !== 'undefined') ? userDesc[0].description : '',
+                    id: item.id
+                }                
+            });
+            return parsed;
+          }
+		     if(listId === -9){ // list settings pub
+             let dbresult = await Db.query("SELECT id AS itemId, inid, description, title, uuid AS id FROM module WHERE (groupid = 3 OR id IN (110, 111) ORDER BY title ASC");
+             var parsed = dbresult.map(async function (item) {
+             let status = null;
+             status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1")
+                  return {
+                    itemId: item.itemId,
+                    inid: item.inid,
+                    status: status,
+                    description: item.description,
+                    title: item.title,
+                    id: item.id
+                }                
+            });
+            return parsed;
+          }
+          if(listId === 98){ // list conference settings
+            let dbresult = await Db.query("SELECT id AS itemId, inid, description, title, uuid AS id FROM confsettings WHERE status = 1 ORDER BY title ASC");
+            var parsed = dbresult.map(async function (item) {
+            let status = null;
+            status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND editid = "+con.escape(parseInt(args.sectionid))+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1")
+                 return {
+                   itemId: item.itemId,
+                   inid: item.inid,
+                   status: status,
+                   description: item.description,
+                   title: item.title,
+                   id: item.id
+               }
+               
+           });
+           return parsed;
+         }
+          if(listId === 28){ // list firewall
+            let dbresult = await Db.query("SELECT id AS itemId, inid, description, title, uuid AS id FROM firewall WHERE status = 1 ORDER BY title ASC");
+            var parsed = dbresult.map(async function (item) {
+            let status = null;
+            status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1");
+                 return {
+                   itemId: item.itemId,
+                   inid: item.inid,
+                   status: status,//itemstatus,
+                   description: item.description,
+                   title: item.title,
+                   id: item.id
+               }
+               
+           });
+           return parsed;
+         }
+          if(listId === 10){ // list languages
+            let dbresult = await Db.query("SELECT id AS itemId, inid, description, title, uuid AS id FROM languages WHERE status = 1 ORDER BY title ASC");
+            var parsed = dbresult.map(async function (item) {
+            let status = null;
+            status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1");
+                 return {
+                   itemId: item.itemId,
+                   inid: item.inid,
+                   status: status,//itemstatus,
+                   description: item.description,
+                   title: item.title,
+                   id: item.id
+               }
+               
+           });
+           return parsed;
+         }
+		    if(listId === 5){ // list chat history
+            let total = [];
+            let dbresult = await Db.query("SELECT DISTINCT(date_format(date, '%Y-%m-%d')) AS date FROM session WHERE domain = " + 
+            con.escape(auth.domainName));
+
+               dbresult.every(async function(arrayItem, index) {
+                let tempTotal = {};
+  
+               // if (arrayItem.domain === lastDomainXter) { 
+                tempTotal.date = arrayItem.date;
+                tempTotal.completed = Db.checkValue("SELECT id AS itemId FROM session WHERE status = 6 AND date_format(date, '%Y-%m-%d') = "+con.escape(arrayItem.date));
+                tempTotal.noanswer = Db.checkValue("SELECT id AS itemId FROM session WHERE (status = 8 || status = 5 || endedby = 15) AND date_format(date, '%Y-%m-%d') = "+con.escape(arrayItem.date)+" AND domain = " + 
+                con.escape(auth.domainName));
+                tempTotal.broken = Db.checkValue("SELECT id AS itemId FROM session WHERE status = 7 AND date_format(date, '%Y-%m-%d') = "+con.escape(arrayItem.date)+" AND domain = " + 
+                con.escape(auth.domainName));
+                tempTotal.total = Db.checkValue("SELECT id AS itemId FROM session WHERE (status = 7 || status = 8 || status = 6 || status = 5 || endedby = 15) AND date_format(date, '%Y-%m-%d') = "+con.escape(arrayItem.date)+" AND domain = " + con.escape(auth.domainName));
+                //tempTotal.total = parseInt(tempTotal.completed)+parseInt(tempTotal.noanswer)+parseInt(tempTotal.broken);
+                 total.push(tempTotal);
+              }); 
+              return total;
+            } // end chat history
 if(listId === 72){ // list offline text
 let text = await Db.query("SELECT description, uuid AS id FROM offlinetext WHERE status = 1");
 return text;
@@ -1571,32 +2157,212 @@ let repo = await Db.query("SELECT id FROM itemstatus WHERE status = 1 AND tbl = 
 			total.push(tempTotal);
               return total;
             } // end chat history
-		
+			 if(listId === 30){ // list subscriptios
+            let dbresult = await Db.query("SELECT subscription.uuid AS id, subscription.title, subscription.description, subscriptionplans.title AS province, subscription.id AS typeid, subscription.id AS itemId, subscription.inid AS inid, subscription.duration AS planid FROM subscription INNER JOIN  subscriptionplans ON subscriptionplans.id = subscription.planid WHERE subscription.status=1 AND subscriptionplans.status = 1 ORDER BY subscription.title ASC ");
+
+var parsed = dbresult.map(async function (item) {
+//let currId = (parseInt(item.inid) > 0 ? item.inid : item.itemId);
+let dbresult1 = await Db.query("SELECT date_format(expires, '%Y-%m-%d') AS date FROM payments WHERE status = 1 AND (subid = "+con.escape(parseInt(parseInt(item.inid) > 0 ? item.inid : item.itemId))+") ORDER BY id DESC LIMIT 0, 1");
+			//  let deptTitle = await getTitle("SELECT title FROM department WHERE status = 1 AND (id = "+con.escape(item.department)+" || inid = "+con.escape(item.department)+") AND (domain = "+con.escape(auth.domainName)+" || domain = 'def') LIMIT 0, 1")
+			  
+                 return {
+                   itemId: item.itemId,
+                   inid: item.inid,
+                   date: (dbresult1.length > 0) ? dbresult1[0].date : "",
+                   title: item.title,
+                   id: item.id,
+                   description: item.description,
+                   province: item.province,
+				   typeid: item.typeid,
+				   planid: item.planid
+               }
+               
+           });
+           return parsed;
+            } // end subscriptios
+			   if(listId === 29){ // list subscription plans
+ let dbresult = await Db.query("SELECT basic AS total, professional AS typeid, title, enterprise AS itemId, uuid AS id FROM module WHERE status IN (1, -2) AND id NOT IN (1, 4, 6, 10, 11, 29, 30, 74, 87, 3, 72, 88, 9, 49) ORDER BY title ASC");   
+           return dbresult
+            } // end subscription plans
+          //  } // end for admin
+          
+if(listId === 88){ // list incoming transfers 
+let getTransfer = await Db.query("SELECT userid, DATE_FORMAT(date, '%M %d %Y %T %p') AS date, id AS itemId, sessionid, receiverid, inid, uuid AS id FROM transfers WHERE status = 1 AND receiverid = " + con.escape(auth.userId) + " ORDER BY transfers.id ASC LIMIT 0, 1");
+    var parsed = getTransfer.map(async function (item) {
+    return {
+    itemId: item.itemId,
+    inid: item.inid,
+    status: item.sessionid,//itemstatus,
+    title: await Utils.GetAgentName(item.userid),
+    id: item.id,
+    date: item.date,
+    total: item.userid,
+    addnew: item.receiverid,
+    subone: await getAllMsg(item.sessionid)
+    }});
+  return parsed;
+  } // end list TRANSFERS
+      
+if(listId === 97){ // list org logo
+return await Db.query("SELECT newname AS title, originalname AS description, uuid AS id FROM orglogo WHERE status = 1  ORDER BY id DESC LIMIT 0, 1");  } // end org logo
+
+     
+if(listId === 102){ // list org name
+  return await Db.query("SELECT title, description, uuid AS id FROM orgname WHERE status = 1 ORDER BY id DESC LIMIT 0, 1");  } // end org logo
+    
+if(listId === 91){ // list out going transfers
+let getTransfer = await Db.query("SELECT userid, date, id AS itemId, sessionid, receiverid, inid, uuid AS id, status FROM transfers WHERE (status = 1 OR status = 8) AND sessionid = " + con.escape(args.sessionid) + " AND userid = " + con.escape(auth.userId) + " ORDER BY transfers.id ASC LIMIT 0, 1");
+
+var parsed = getTransfer.map(async function (item) {
+return {
+itemId: item.itemId,
+inid: item.inid,
+status: item.status,//itemstatus,
+title: await Utils.GetAgentName(item.userid),
+id: item.id,
+date: item.date,
+total: item.sessionid,
+addnew: item.receiverid,
+subone: await getAllMsg(item.sessionid)
+}});
+
+return parsed;
+} // end list 
+
+if(listId === 7){ // list offline message userId typeId
+let getOfflineMsg = await Db.query("SELECT offlinemsg.id AS itemId, department, offlinemsg.inid, offlinemsg.description, offlinemsg.title, offlinemsg.email, offlinemsg.date, offlinemsg.iv, offlinemsg.uuid AS id, offlinemsg.sessionid FROM offlinemsg WHERE offlinemsg.status = 1 AND offlinemsg.id NOT IN (SELECT rowid FROM itemstatus WHERE tbl = 7 AND itemstatus.status = 1) ORDER BY offlinemsg.id ASC" );
+
+
+if(parseInt(auth.typeId) === 2){
+getOfflineMsg = await Db.query("SELECT offlinemsg.id AS itemId, department, offlinemsg.inid, offlinemsg.description, offlinemsg.title, offlinemsg.email, offlinemsg.date, offlinemsg.iv, offlinemsg.uuid AS id, offlinemsg.sessionid FROM offlinemsg WHERE offlinemsg.status = 1  AND offlinemsg.id NOT IN (SELECT rowid FROM itemstatus WHERE tbl = 7 AND itemstatus.status = 1) AND department IN (SELECT itemstatus.rowid FROM itemstatus WHERE itemstatus.status = 1 AND itemstatus.tbl = 14 AND itemstatus.editid = "+con.escape(auth.userId)+") ORDER BY itemId ASC" );}
+
+var parsed = getOfflineMsg.map(async function (item) {
+  let status = null;
+  status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1");
+ let deptTitle = await getTitle("SELECT title FROM department WHERE status = 1 AND (id = "+con.escape(item.department)+" || inid = "+con.escape(item.department)+") LIMIT 0, 1");
+  let show = await getAgentDept(auth.userId, auth.domainName, item.department);
+  let getMail = Utils.decrypt({iv: item.iv, content: item.email});
+  //if(parseInt(item.sessionid) === 0){getMail = await Utils.decryptV1({iv: item.iv, content: item.email});}
+if(parseInt(auth.typeId) === 1 || show.total === 0){  
+  return {
+  itemId: item.itemId,
+  inid: item.inid,
+  status: status,//itemstatus,
+  description: item.description,
+  title: item.title,
+  id: item.id,
+  email: getMail,
+  total: item.department,
+  date: item.date,
+  zip: deptTitle
+  }}
+  if(parseInt(auth.typeId) !== 1 && show.status > 0){  
+  return {
+  itemId: item.itemId,
+  inid: item.inid,
+  status: status,//itemstatus,
+  description: item.description,
+  title: item.title,
+  id: item.id,
+  email: getMail,
+  total: item.department,
+  date: item.date,
+  zip: deptTitle
+  }}
+  });
+return parsed;
+} // end list offline msg
+
  if(listId === 15){ // gender list for form
 return await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM gender WHERE status = 1 ORDER BY title ASC" );
  }
 
  
-// if(listId === -15){ // gender list team form
- // return await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM statuscode WHERE status = 1 AND id IN (42,43,44) ORDER BY title ASC");
-// }
+ if(listId === -15){ // gender list team form
+  return await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM statuscode WHERE status = 1 AND id IN (42,43,44) ORDER BY title ASC");
+ }
 
 if(listId === 83){ // time zone list for form
-let dbret;
-if(parseInt(args.sectionid) === 122){
-dbret =  await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM alert_status WHERE status = 1 AND id<>1 ORDER BY title ASC" );}
-
-if(parseInt(args.sectionid) === 163){
-dbret =  await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM record WHERE status = 1 AND type=169 ORDER BY id DESC" );}
-return dbret;
-}
-
+ return await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM timezone WHERE status = 1 ORDER BY title ASC" );}
+if(listId === 84){ // participants number gender list for form
+return await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM participantssize WHERE status = 1 ORDER BY id ASC" );}
 if(listId === 53){ // COUNTRY list for form
 let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM countries WHERE status = 1 ORDER BY title ASC" );return dbresult;}
 if(listId === 87){ // department list for form
 let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM department WHERE status = 1 ORDER BY title ASC" );return dbresult;}
+if(listId === 90){ // online agents list for form
+let dbresult = await Db.query("SELECT user.id AS itemId, user.inid, user.username, user.uuid AS id, user.usernameiv FROM user WHERE user.status = 1 AND user.id <> "+con.escape(auth.userId)+" AND user.id IN (SELECT rowid FROM itemstatus WHERE itemstatus.status = 1 AND itemstatus.tbl = 24)"); 
 
-       
+
+var parsed = dbresult.map(async function (item) {
+return {
+id: item.id,
+inid: item.inid,
+title: await Utils.GetAgentName(item.itemId)+ " ( "+ Utils.decrypt({iv: item.usernameiv, content: item.username})+" ) ",
+itemId: item.itemId
+}
+}); 
+return parsed;
+}
+if(listId === 24){ // default agent status
+return await Db.query("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape(auth.userId)+") LIMIT 0, 1");}
+
+if(listId === 3){ // list incoming request
+let incomingdbresult;             
+if(parseInt(auth.typeId) === 1){
+incomingdbresult = await Db.query("SELECT DATE_FORMAT(date, '%M %d %Y %T %p') AS date, clientsocketid AS address, uuid AS id, id AS itemId, inid, customerref, department FROM session WHERE status = 13 ORDER BY id ASC LIMIT 0, 1 ");}
+
+if(parseInt(auth.typeId) === 2){
+incomingdbresult = await Db.query("SELECT DATE_FORMAT(date, '%M %d %Y %T %p') AS date, clientsocketid AS address, uuid AS id, id AS itemId, inid, customerref, department FROM session WHERE status = 13 AND department IN (SELECT rowid FROM itemstatus WHERE status = 1 AND tbl = 14 AND editid = "+con.escape(auth.userId)+") ORDER BY id ASC LIMIT 0, 1 ");}
+
+var parsed = incomingdbresult.map(async function (item) {
+let name = await getTitle("SELECT name AS title FROM customers WHERE status = 1 AND (id = "+con.escape(parseInt(item.customerref))+" OR inid= "+con.escape(parseInt(item.customerref))+") ORDER BY id DESC LIMIT 0, 1");
+let show = await getAgentDept(auth.userId, auth.domainName, item.department);
+if(parseInt(auth.typeId) === 1 || show.total === 0){  
+return {
+date: item.date,
+address: item.address,
+id: item.id,
+inid: item.inid,
+description: item.description,
+itemId: item.itemId,
+title: name,
+zip:await getTitle("SELECT title FROM department WHERE status = 1 AND (id = "+con.escape(parseInt(item.department))+" OR inid= "+con.escape(parseInt(item.department))+")"),
+}}
+else if((parseInt(auth.typeId) !== 1 || parseInt(show.total) > 0 ) && parseInt(show.status) > 0){ 
+return {
+date: item.date,
+address: item.address,
+id: item.id,
+inid: item.inid,
+description: item.description,
+itemId: item.itemId,
+title: name,
+zip: await getTitle("SELECT title FROM department WHERE status = 1 AND (id = "+con.escape(parseInt(item.department))+" OR inid= "+con.escape(parseInt(item.department))+")"),
+}} else { return emptyResult;  }});
+return parsed;}
+
+if(listId === 86){ // list incoming audio video cal
+return await Db.query("SELECT uuid AS id, rtctype AS fullname FROM incomingcall WHERE status = 1 AND sessionid = " + con.escape(args.sessionid)+" AND sectionid = " + con.escape(args.sectionid)+" ORDER BY incomingcall.id ASC LIMIT 0,1");}
+
+if(listId === 59){ // list footer
+return await Db.query("SELECT description, title, id AS itemId, inid, uuid AS id FROM module WHERE (access=" + con.escape(auth.typeId) +" || access=2) AND id IN (62, 71) ORDER BY itemId ASC");}
+  
+  
+	  
+if(listId === 18){ // check active chat
+const items = await Db.query("SELECT clientsocketid, uuid AS id, userid, id AS itemId, customerref, department FROM session WHERE status = 1  AND userid =  "+con.escape(parseInt(auth.userId))+" AND sectionid =  "+con.escape(parseInt(args.sectionid))+" ORDER BY id ASC LIMIT 0, 1 ");
+
+if(items.length > 0){ 
+let customerName = "";
+const cusName = await Db.query ("SELECT `name`, customerid FROM customers WHERE id="+con.escape(items[0].customerref)+" LIMIT 0,1");
+if(cusName.length > 0){ customerName = cusName[0].name; customerNumber = cusName[0].customerid;}
+result = [{status:1, msg:customerName, description: items[0].userid, itemId: items[0].itemId, province: Utils.GetAgentName(auth.userId), address: items[0].clientsocketid, username: items[0].id, title:customerNumber}];
+  } else {
+    result = [{status:0, msg:0, description: "NA", address: "NA", title: "NA", itemId: 0, province:"", username:"", title:""}];
+  }
+  return result;  
+}         
            //res.send(dbresult);
   return dbresult;
           }},
