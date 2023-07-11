@@ -84,16 +84,8 @@ let auth = await checkUser(token);
 if(!auth.status){  return noSignIn; }
 if(await Utils.checkUserStatus(auth.userId) !== 1){return noSignIn;}
 
-if(parseInt(args.input.formid) === 114 || parseInt(args.input.formid) === 112 || parseInt(args.input.formid) === 113 || parseInt(args.input.formid) === 118 || parseInt(args.input.formid) === 119){ // create egp law
-   if (!args.input.description || args.input.description === '') {result.msg = result.msg+"Body, "; result.status = 0; }
-  if(result.status === 0) {return result; }
-  let update = await Db.dbUpdate("UPDATE egp_bpplaw SET status = 2 WHERE type = "+con.escape(parseInt(args.input.gender)));
-  if(update){
-  await Db.dbUpdate("INSERT INTO egp_bpplaw (userid, description, domain, type) VALUES ("+
-  con.escape(auth.userId)+", "+con.escape(args.input.description)+", "+con.escape(auth.domainName)+", "+con.escape(args.input.gender)+")");
-  result.status = 1; result.msg = "Saved"; return result;  }
-  } // end egp law
 
+console.log(args);
 if(parseInt(args.input.formid) === 94){ // create im
   if (!args.input.title || args.input.title === "") {result.msg = result.msg+"No recipient selected, "; result.status = 0; }
   if (!args.input.description || args.input.description === "") {result.msg = result.msg+"Please enter body content "; result.status = 0; }
@@ -137,34 +129,6 @@ await Db.dbUpdate("INSERT INTO imslave (recid, userid, description, pairid) VALU
 result.status = 1; result.msg = "Done"; return result;
  } // end create im reply
  
- /*
-if(parseInt(args.input.formid) === 7){ // reply offline msg 
-  if (!args.input.description || args.input.description.trim() === '' || !args.input.zip || args.input.zip.trim() === '' || !args.input.fullname || args.input.fullname.trim() === '' || !args.input.id || isNaN(args.input.id)) {result.msg = result.msg+"Internal error, "; result.status = 0; }
-  if(result.status === 0) {return result; }
- await Db.dbUpdate("INSERT INTO offlinemsgreply (userid, description, msgid) VALUES ("+ con.escape(auth.userId)+", "+con.escape(args.input.description)+", "+con.escape(args.input.id)+")");
- await Db.dbUpdate("INSERT INTO itemstatus (userid, tbl, domain, rowid, editid) VALUES ("+ con.escape(auth.userId)+", 7, "+con.escape(auth.domainName.toLowerCase())+", "+con.escape(args.input.id)+", "+con.escape(auth.userId)+")");
-
-//let recEmail = await Db.query("SELECT department FROM offlinemsg WHERE id = "+con.escape(parseInt(args.input.id))+" ORDER BY id DESC LIMIT 0, 1"); 
-
-//let subject = await getTitle("SELECT title FROM department WHERE status = 1 AND (id = "+con.escape(parseInt(recEmail[0].department))+" OR inid = "+con.escape(parseInt(recEmail[0].department)));
-let sendMail = false;
-if(!sendMail){ sendMail = true; }
-result.status = 1; result.msg = "Reply sent!"; return result;   
-  } // end reply offline msg
-if(parseInt(args.input.formid) === 89){ // accept / reject transfer  
-if (!args.input.planid || !args.input.id || !args.input.country || !args.input.rowid || isNaN(args.input.rowid) || isNaN(args.input.planid) || isNaN(args.input.id)) {result.msg = result.msg+"Internal error, "; result.status = 0; }
-if(result.status === 0) {return result; }
-
-let status = await Db.query("SELECT id FROM transfers WHERE id="+con.escape(args.input.id)+" AND status = 1 ORDER BY id DESC LIMIT 0, 1");
-
-if(status.length > 0){
-if(parseInt(args.input.planid) === 1){  
-await Db.dbUpdate("UPDATE transfers SET status = 2 WHERE id = "+con.escape(args.input.id));
-await Db.dbUpdate("UPDATE session SET userid = "+con.escape(auth.userId)+", sectionid="+con.escape(args.input.country)+" WHERE id = "+con.escape(args.input.rowid));}
-if(parseInt(args.input.planid) === 2){   await Db.dbUpdate("UPDATE transfers SET status = 8 WHERE id = "+con.escape(args.input.id));  }}
-result.status = 1; result.msg = "Done"; return result;   
-  } // end accept / reject transfer
-  */
 if(auth.typeId === 1){ // applies to admin  only
 if(parseInt(args.input.formid) === 95){ // create agent
   
@@ -243,6 +207,7 @@ result.status = 1; result.msg = `Notification email has been to the username.`;
 }
 		
     } // end create agent
+
  if(parseInt(args.input.formid) === 67){ // process support / feedback form
  if (!args.input.title || args.input.title === '') {result.msg = result.msg+"Title, "; result.status = 0; }
 if (!args.input.gender || !parseInt(args.input.gender)) {result.msg = result.msg+"Category, "; result.status = 0; }
@@ -250,13 +215,12 @@ if (!args.input.description || args.input.description === '') {result.msg = resu
 //result.status = 1; result.msg = "Message Submitted"; return result;
 
  }
- 
-if(parseInt(args.input.formid) === 12 || parseInt(args.input.formid) === 193 || parseInt(args.input.formid) === 194 || parseInt(args.input.formid) === 114 || parseInt(args.input.formid) === 189 || parseInt(args.input.formid) === 165 || parseInt(args.input.formid) === 164 || parseInt(args.input.formid) === 76){ // create department
-if (!args.input.fullname || args.input.fullname === '') {
-result.msg = result.msg+"Title, "; result.status = 0; }
-
-if (!args.input.description || args.input.description === '') { 
-result.msg = result.msg+"Description, "; result.status = 0; }
+    if(parseInt(args.input.formid) === 137){ // create fiscal year
+if(checkSub.status === false){	result.status = 0; result.msg = "Subscription Required "; return result;}
+        //parseInt(args.input.frmtype) === 1 &&  // use to check whether new or edit
+      
+if (!args.input.fullname || args.input.fullname.length !== 4 || args.input.fullname === '' || isNaN(args.input.fullname)) {
+result.msg = result.msg+"Invalid: Title must be valid year, "; result.status = 0; }
 
 if(args.input.fullname){
 const minFullname = await Utils.validate(Utils.setValidation({fullname: args.input.fullname},{fullname: 'minLength:2|required'}), 'fullname').catch(function(e) {
@@ -266,12 +230,59 @@ const minFullname = await Utils.validate(Utils.setValidation({fullname: args.inp
 if(result.status === 0) {return result; }
 if(parseInt(args.input.id) !== 25){
 if(args.input.frmtype === 1){
+const titleExists = await Db.checkValue("SELECT status FROM egp_fiscalyear WHERE (status = 1 AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
+    if(titleExists > 0){
+      result.msg = 'Title exits'
+      result.status = 0; 
+      return result;
+    }  }  
+
+   if(args.input.frmtype === 2){
+    const titleExists = await Db.checkValue("SELECT status FROM egp_fiscalyear WHERE (status = 1 AND id <> "+con.escape(parseInt(args.input.id))+" AND inid <> "+con.escape(parseInt(args.input.id))+" AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
+  if(titleExists > 0){
+     result.msg = 'Title exits'
+    result.status = 0; 
+     return result;
+    }
+    await Db.dbUpdate("UPDATE egp_fiscalyear SET status = 2 WHERE ((id = "+con.escape(parseInt(args.input.id))+" || inid = "+con.escape(parseInt(args.input.id))+"))");
+  }  
+  if(result.status === 0){return result;}
+ 
+  //if(args.input.frmtype === 1){
+    const department = await Db.dbUpdate("INSERT INTO egp_fiscalyear (userid, title, inid, startdate, enddate) VALUES ("+
+      con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+con.escape(args.input.id)+", "+con.escape(args.input.zip)+", "+con.escape(args.input.address)+")");
+  //}
+}
+
+      result.status = 1;
+      result.msg = "Done";
+    } // end create fiscal year
+if(parseInt(args.input.formid) === 12 || parseInt(args.input.formid) === 193 || parseInt(args.input.formid) === 194 || parseInt(args.input.formid) === 114 || parseInt(args.input.formid) === 189 || parseInt(args.input.formid) === 165 || parseInt(args.input.formid) === 164 || parseInt(args.input.formid) === 76){ // create department record
+console.log('1');
+if (!args.input.fullname || args.input.fullname === '') {
+result.msg = result.msg+"Title, "; result.status = 0; }
+console.log('2');
+
+if (!args.input.description || args.input.description === '') { 
+result.msg = result.msg+"Description, "; result.status = 0; }
+console.log('3');
+
+if(args.input.fullname){
+const minFullname = await Utils.validate(Utils.setValidation({fullname: args.input.fullname},{fullname: 'minLength:2|required'}), 'fullname').catch(function(e) {
+  result.msg = result.msg+e; });
+  if(!minFullname){result.status = 0; }}
+console.log('4');
+
+if(result.status === 0) {return result; }
+if(parseInt(args.input.domain) !== 0){
+if(args.input.frmtype === 1){
 const titleExists = await Db.checkValue("SELECT status FROM record WHERE status = 1 AND title = "+con.escape(args.input.fullname)+" AND type="+con.escape(parseInt(args.input.formid))+" LIMIT 0, 1")
     if(titleExists > 0){
       result.msg = 'Title exits'
       result.status = 0; 
       return result;
     }  }  
+console.log('5');
 
    if(args.input.frmtype === 2){
     const titleExists = await Db.checkValue("SELECT status FROM record WHERE (type="+con.escape(parseInt(args.input.formid))+" AND status = 1 AND id <> "+con.escape(parseInt(args.input.id))+" AND inid <> "+con.escape(parseInt(args.input.id))+" AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
@@ -281,15 +292,15 @@ const titleExists = await Db.checkValue("SELECT status FROM record WHERE status 
      return result;
     }
     await Db.dbUpdate("UPDATE record SET status = 2 WHERE ((id = "+con.escape(parseInt(args.input.id))+" || inid = "+con.escape(parseInt(args.input.id))+"))");
-  }  
+  }   }
+
   if(result.status === 0){return result;}
- 
+
   //if(args.input.frmtype === 1){
     const department = await Db.dbUpdate("INSERT INTO record (userid, title, description, type, inid) VALUES ("+
       con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+
       con.escape(args.input.description)+", "+con.escape(parseInt(args.input.formid))+", "+con.escape(parseInt(args.input.id))+")");
   //}
-}
 
       result.status = 1;
       result.msg = "Done";
@@ -297,7 +308,7 @@ const titleExists = await Db.checkValue("SELECT status FROM record WHERE status 
 	
 	
 	
-if(parseInt(args.input.formid) === 192){ // create alert
+if(parseInt(args.input.formid) === 169){ // create alert
 if (!args.input.fullname || args.input.fullname === '') {
 result.msg = result.msg+"Title, "; result.status = 0; }
 
@@ -318,9 +329,9 @@ if(result.status === 0) {return result; }
 if(result.status === 0){return result;}
  
   //if(args.input.frmtype === 1){
-    const department = await Db.dbUpdate("INSERT INTO record (userid, title, description, type, inid, channel) VALUES ("+
+    const department = await Db.dbUpdate("INSERT INTO record (userid, title, description, type, inid, channel, status) VALUES ("+
       con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+
-      con.escape(args.input.description)+", "+con.escape(parseInt(args.input.formid))+", "+con.escape(parseInt(args.input.id))+", "+con.escape(parseInt(args.input.planid))+")");
+      con.escape(args.input.description)+", "+con.escape(parseInt(args.input.formid))+", "+con.escape(parseInt(args.input.id))+", "+con.escape(parseInt(args.input.planid))+", "+con.escape(parseInt(args.input.status))+")");
   //}
       result.status = 1;
       result.msg = "Done";
@@ -341,493 +352,7 @@ con.escape(auth.userId)+", 'NA', "+con.escape(args.input.description)+", "+con.e
 result.status = 1;
 result.msg = "Done";
 } // end create settings message
-	 /*
 
-if(parseInt(args.input.formid) === 140){ // create intent to award
-if(checkSub.status === false){	result.status = 0; result.msg = "Subscription Required "; return result;}
-if (!args.input.description || args.input.description === "") {
-result.msg = result.msg+"Body, "; result.status = 0; }
-if(result.status === 0) {return result; }   
-let updateDate = await Db.dbUpdate("UPDATE egp_intent SET status = 2 WHERE planid = "+con.escape(parseInt(args.input.id)));
-if(updateDate){
-const department = await Db.dbUpdate("INSERT INTO egp_intent (userid, planid, description) VALUES ("+con.escape(auth.userId)+", "+con.escape(args.input.id)+", "+con.escape(args.input.description)+")");
-}      result.status = 1;
-result.msg = "Done";
-} // end create intent to award
-
-
-    if(parseInt(args.input.formid) === 110){ // create news
-      if(checkSub.status === false){	result.status = 0; result.msg = "Subscription Required "; return result;}
-              //parseInt(args.input.frmtype) === 1 &&  // use to check whether new or edit
-            
-      if (!args.input.fullname || args.input.fullname === '') {
-      result.msg = result.msg+"Title, "; result.status = 0; }
-      
-      if (!args.input.description || args.input.description === '') { 
-      result.msg = result.msg+"Body, "; result.status = 0; }
-      
-      if(args.input.fullname){
-      const minFullname = await Utils.validate(Utils.setValidation({fullname: args.input.fullname},{fullname: 'minLength:2|required'}), 'fullname').catch(function(e) {
-        result.msg = result.msg+e; });
-        if(!minFullname){result.status = 0; }}
-      
-      if(result.status === 0) {return result; }
-      if(parseInt(args.input.id) !== 25){    
-      
-         if(args.input.frmtype === 2){
-        await Db.dbUpdate("UPDATE egp_news SET status = 2 WHERE (id = "+con.escape(parseInt(args.input.id))+" || inid = "+con.escape(parseInt(args.input.id))+")");
-        }  
-       
-        //if(args.input.frmtype === 1){
-          const department = await Db.dbUpdate("INSERT INTO egp_news (userid, title, description, inid, typeid) VALUES ("+
-            con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+
-            con.escape(args.input.description)+", "+con.escape(args.input.id)+", "+con.escape(args.input.planid)+")");
-        //}
-      }
-      
-            result.status = 1;
-            result.msg = "Done";
-          } // end create news
-    if(parseInt(args.input.formid) === 106){ // create agency
-      if(checkSub.status === false){	result.status = 0; result.msg = "Subscription Required "; return result;}
-              //parseInt(args.input.frmtype) === 1 &&  // use to check whether new or edit
-            
-      if (!args.input.fullname || args.input.fullname === '') {
-      result.msg = result.msg+"Title, "; result.status = 0; }
-      
-      if (!args.input.description || args.input.description === '') { 
-      result.msg = result.msg+"Description, "; result.status = 0; }
-      
-      if(args.input.fullname){
-      const minFullname = await Utils.validate(Utils.setValidation({fullname: args.input.fullname},{fullname: 'minLength:2|required'}), 'fullname').catch(function(e) {
-        result.msg = result.msg+e; });
-        if(!minFullname){result.status = 0; }}
-      
-      if(result.status === 0) {return result; }
-      if(parseInt(args.input.id) !== 25){
-      if(args.input.frmtype === 1){
-      const titleExists = await Db.checkValue("SELECT status FROM egp_agency WHERE (status = 1 AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-          if(titleExists > 0){
-            result.msg = 'Agency exits'
-            result.status = 0; 
-            return result;
-          }  }  
-      
-         if(args.input.frmtype === 2){
-          const titleExists = await Db.checkValue("SELECT status FROM egp_agency WHERE (status = 1 AND id <> "+con.escape(parseInt(args.input.id))+" AND inid <> "+con.escape(parseInt(args.input.id))+" AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-        if(titleExists > 0){
-           result.msg = 'Agency exits'
-          result.status = 0; 
-           return result;
-          }
-          await Db.dbUpdate("UPDATE egp_agency SET status = 2 WHERE ((id = "+con.escape(parseInt(args.input.id))+" || inid = "+con.escape(parseInt(args.input.id))+"))");
-        }  
-        if(result.status === 0){return result;}
-       
-        //if(args.input.frmtype === 1){
-          const department = await Db.dbUpdate("INSERT INTO egp_agency (userid, title, description, officer, inid) VALUES ("+
-            con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+
-            con.escape(args.input.description)+", "+con.escape(args.input.city)+", "+con.escape(args.input.id)+")");
-        //}
-      }
-      result.status = 1;
-      result.msg = "Done";
-    } // end create agency
-       
-  
-    if(parseInt(args.input.formid) === 105){ // create project
-      if(checkSub.status === false){	result.status = 0; result.msg = "Subscription Required "; return result;}
-              //parseInt(args.input.frmtype) === 1 &&  // use to check whether new or edit
-            
-if (!args.input.fullname || args.input.fullname === '') { result.msg = result.msg+"Title, "; result.status = 0; }
-if (!args.input.total || isNaN(parseInt(args.input.total))) { result.msg = result.msg+"Fiscal Year, "; result.status = 0; }
-
-if (!args.input.description || args.input.description === '') { result.msg = result.msg+"Description, "; result.status = 0; }
-      
-      if(args.input.fullname){
-      const minFullname = await Utils.validate(Utils.setValidation({fullname: args.input.fullname},{fullname: 'minLength:2|required'}), 'fullname').catch(function(e) {
-        result.msg = result.msg+e; });
-        if(!minFullname){result.status = 0; }}
-      
-      if(result.status === 0) {return result; }
-      if(parseInt(args.input.id) !== 25){
-      if(args.input.frmtype === 1){
-      const titleExists = await Db.checkValue("SELECT status FROM egp_project WHERE (status = 1 AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-          if(titleExists > 0){
-            result.msg = 'Project exits'
-            result.status = 0; 
-            return result;
-          }  }  
-      
-         if(args.input.frmtype === 2){
-          const titleExists = await Db.checkValue("SELECT status FROM egp_project WHERE (status = 1 AND id <> "+con.escape(parseInt(args.input.id))+" AND inid <> "+con.escape(parseInt(args.input.id))+" AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-        if(titleExists > 0){
-           result.msg = 'Project exits'
-          result.status = 0; 
-           return result;
-          }
-          await Db.dbUpdate("UPDATE egp_project SET status = 2 WHERE ((id = "+con.escape(parseInt(args.input.id))+" || inid = "+con.escape(parseInt(args.input.id))+"))");
-        }  
-        if(result.status === 0){return result;}
-       
-        //if(args.input.frmtype === 1){
-          const department = await Db.dbUpdate("INSERT INTO egp_project (userid, title, description, inid, govt, bank, fiscalyear, disbursed, total, agreementno) VALUES ("+
-            con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+
-            con.escape(args.input.description)+", "+con.escape(args.input.id)+", "+con.escape(args.input.city)+", "+con.escape(args.input.stringfour)+", "+con.escape(parseInt(args.input.total))+", "+con.escape(args.input.address)+", "+con.escape(args.input.zip)+", "+con.escape(args.input.province)+")");
-        //}
-      }
-      result.status = 1;
-      result.msg = "Done";
-    } // end create project
-      
-     
-   if(parseInt(args.input.formid) === -85){ // create new version seen
-      if (!args.input.title || args.input.title === '') {  result.status = 0; return result; }
-  const department = await Db.dbUpdate("INSERT INTO versionseen (userid, version, domain) VALUES ("+con.escape(auth.userId)+", "+con.escape(args.input.title)+", "+con.escape(auth.domainName)+")");
-
-    result.status = 1;
-    result.msg = "Done";
-  } // end new version seen
-if(parseInt(args.input.formid) === 27){ // create filerepo
-let mediafile = 0;
-if(checkSub.status === false){result.status = 0; result.msg = "Subscription Required "; return result;}
-     let filerepoId = args.input.id
-if (!args.input.fullname || args.input.fullname === '') { result.msg = result.msg+"Title, "; result.status = 0; }
-if (!args.input.planid || isNaN(parseInt(args.input.planid))) { result.msg = result.msg+"Repo Type, "; result.status = 0; }
-
-if (!args.input.description || args.input.description === '') { 
-result.msg = result.msg+"Description, "; result.status = 0; }
-
-if(args.input.fullname){
-const minFullname = await Utils.validate(Utils.setValidation({fullname: args.input.fullname},{fullname: 'minLength:2|required'}), 'fullname').catch(function(e) {
-  result.msg = result.msg+e; });
-  if(!minFullname){result.status = 0; }}
-
-if(result.status === 0) {return result; }
-
-if(args.input.frmtype === 1){
-const titleExists = await Db.checkValue("SELECT status FROM filerepo WHERE (status = 1 AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-    if(titleExists > 0){
-      result.msg = 'Title exits'
-      result.status = 0; 
-      return result;
-    }  }  
-
-   if(args.input.frmtype === 2){
-    filerepoId === args.input.id;
-    const titleExists = await Db.checkValue("SELECT status FROM filerepo WHERE (status = 1 AND id <> "+con.escape(parseInt(args.input.id))+" AND inid <> "+con.escape(parseInt(args.input.id))+" AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-    if(titleExists > 0){
-      result.msg = 'Title exits'
-      result.status = 0; 
-      return result;
-    }  
-    await Db.dbUpdate("UPDATE filerepo SET status = 2 WHERE ((id = "+con.escape(parseInt(args.input.id))+" || inid = "+con.escape(parseInt(args.input.id))+"))");
-  }
-  if(result.status === 0){return result;}
- 
-  //if(args.input.frmtype === 1){
-    const department = await Db.dbUpdate("INSERT INTO filerepo (userid, title, description, domain, inid, mediafile, typeid) VALUES ("+
-      con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+
-      con.escape(args.input.description)+", "+con.escape(auth.domainName)+", "+con.escape(filerepoId)+", "+con.escape(mediafile)+", "+con.escape(args.input.planid)+")");
-  //}
-  
-
-      result.status = 1;
-      result.msg = "Done";
-  } // end create filerepo
-
-
-
-if(parseInt(args.input.formid) === 78 || parseInt(args.input.formid) === 79 || parseInt(args.input.formid) === 81){ // create video conf
-let conftype = "video";
-if(args.input.formid === 79){ conftype = "podcast";}
-if(args.input.formid === 81){ conftype = "webinar";}
-let filerepoId = args.input.id
-if (!args.input.fullname || args.input.fullname === '') {result.msg = result.msg+"Title, "; result.status = 0; }
-
-if (!args.input.city || args.input.city === '') {result.msg = result.msg+"Mode, "; result.status = 0; }
-
-if (!args.input.zip || args.input.zip === '') {result.msg = result.msg+"Date, "; result.status = 0; }
-
-if (!args.input.total || args.input.total === '') {result.msg = result.msg+"Time Zone, "; result.status = 0; }
-
-if (!args.input.address || args.input.address === '') {result.msg = result.msg+"Start time, "; result.status = 0; }
-
-if (!args.input.phone || args.input.phone === '') {result.msg = result.msg+"Duration, "; result.status = 0; }
-
-if (!args.input.country || args.input.country === '') {result.msg = result.msg+"Recording, "; result.status = 0; }
-
-if (!args.input.description || args.input.description === '') { result.msg = result.msg+"Description, "; result.status = 0; }
-
-if(args.input.fullname){
-const minFullname = await Utils.validate(Utils.setValidation({fullname: args.input.fullname},{fullname: 'minLength:2|required'}), 'fullname').catch(function(e) {
-  result.msg = result.msg+e; });
-  if(!minFullname){result.status = 0; }}
-
-if(result.status === 0) {return result; }
-
-if(args.input.frmtype === 1){
-const titleExists = await Db.checkValue("SELECT status FROM videoconf WHERE (status = 1 AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-    if(titleExists > 0){
-      result.msg = 'Title exits'
-      result.status = 0; 
-      return result;
-    }  }  
-
-   if(args.input.frmtype === 2){
-    filerepoId === args.input.id;
-    const titleExists = await Db.checkValue("SELECT status FROM videoconf WHERE (status = 1 AND id <> "+con.escape(parseInt(args.input.id))+" AND inid <> "+con.escape(parseInt(args.input.id))+" AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-    if(titleExists.length > 0){
-      result.msg = 'Title exits'
-      result.status = 0; 
-      return result;
-    }  
-    await Db.dbUpdate("UPDATE videoconf SET status = 2 WHERE ((id = "+con.escape(parseInt(args.input.id))+" || inid = "+con.escape(parseInt(args.input.id))+"))");
-  }
-  if(!Utils.isBeforeToday(args.input.zip)){result.msg = 'Date cannot be below the current date!'
-  result.status = 0; 
-  return result;}
-  if(result.status === 0){return result;}
- 
-  //if(args.input.frmtype === 1){
-await Db.dbUpdate("INSERT INTO videoconf (userid, title, description, domain, inid, conftype, starttime, duration, startdate, timezone, record, mode ) VALUES ("+
-con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+
-con.escape(args.input.description)+", "+con.escape(auth.domainName)+", "+con.escape(filerepoId)+", "+con.escape(conftype)+", "+con.escape(args.input.address)+", "+con.escape(args.input.phone)+", "+con.escape(args.input.zip)+", "+con.escape(args.input.total)+", "+con.escape(args.input.country)+", "+con.escape(args.input.city)+")");
-//}
-  
-//create conf url
-if(args.input.frmtype === 1){
-const getConfId = await Db.dbUpdate("SELECT id, inid FROM videoconf WHERE (status = 1 AND title = "+con.escape(args.input.fullname)+")) LIMIT 0, 1")
-if(getConfId.length > 0){ 
-let tmpId = getConfId[0].id; 
-await Db.dbUpdate("INSERT INTO confurl (confid) VALUES ("+
-con.escape(parseInt(tmpId))+")");
- }}
-result.status = 1;
-result.msg = "Done";
-} // end create video conf
-
-
-if(parseInt(args.input.formid) === -5){ // create participants
-const nopartcipant = await Db.query ("SELECT id FROM videoconfparticipants WHERE status = 1 AND  videoconfid = "+con.escape(parseInt(args.input.rowid)));  
-if(checkSub.status === false && nopartcipant.length > 0){	result.status = 0; result.msg = "Subscription Required for more participants"; return result;}
-if(nopartcipant.length > 28){	result.status = 0; result.msg = "Maximum Thirty (30) participants reached"; return result;}
-if (!args.input.fullname || args.input.fullname === '') { result.msg = result.msg+"Name, "; result.status = 0; }
-if (!args.input.country || args.input.country === '') { result.msg = result.msg+"Unknown error!, "; result.status = 0; }
-
-if (!args.input.description || args.input.description === '') { result.msg = result.msg+"Email, "; result.status = 0; }
-if (!args.input.rowid || args.input.rowid === '') { result.msg = result.msg+"Unknown error!, "; result.status = 0; }
-if (!args.input.tbl || args.input.tbl === '') { result.msg = result.msg+"Unknown error!, "; result.status = 0; }
-if(result.status === 0) {return result; } 
-
-const validEmail = await Utils.validate(Utils.setValidation({email: args.input.description.trim()},{email: 'email|required|maxLength:100'}), 'email').catch(function(e) {
-result.msg = result.msg+e; result.status = 0;});
-if(!validEmail){ result.status = 0;}
-if(result.status === 0) {return result; }      
-
-
-//if(noPart > 1){result.msg = "Subscription required for more than two (2) participants"; result.status = 0;	}if(result.status === 0) {return result; }      
-const usernameHash = Utils.encrypt (args.input.description.trim());
-let exits = 1; 
-const userExits = await Db.query ("SELECT id, email, emailiv FROM videoconfparticipants WHERE status = 1 AND videoconfid = "+con.escape(parseInt(args.input.rowid)));
-if(typeof userExits === 'object' && userExits !== null && userExits.length > 0){
-        userExits.every(async function(arrayItem, index) {
-          const decrypt = Utils.decrypt ({iv: arrayItem.emailiv, content: arrayItem.email});
-          if (decrypt === args.input.description.trim()) { 
-            exits = 0; 
-            return;
-          } 
-        }); //return result;
-      } 
-if(exits === 0) {result.msg = result.msg+"Email already added";  result.status = 0}      
-if(result.status === 0) {return result; }      
-if(exits === 1){
-await Db.dbUpdate("INSERT INTO videoconfparticipants (email, title, videoconfid, emailiv, mode) VALUES ("+con.escape(usernameHash.content.toLowerCase())+", "+con.escape(args.input.fullname)+","+con.escape(parseInt(args.input.rowid))+", "+ con.escape(usernameHash.iv.toLowerCase())+", "+ con.escape(parseInt(args.input.country))+")");
-}
-result.status = 1;
-result.msg = "Done";
-} // end create participants
-
-
-if(parseInt(args.input.formid) === 28){ // create firewall
-//if(checkSub.status === false){	result.status = 0; result.msg = "Subscription Required "; return result;}
-      if (!args.input.fullname || args.input.fullname === '') {
-        result.msg = result.msg+"I.P. Address, "; result.status = 0; }
-    
-      if (!args.input.description || args.input.description === '') { 
-        result.msg = result.msg+"Description, "; result.status = 0; }
-    
-       if(args.input.fullname){
-        const minFullname = await Utils.validate(Utils.setValidation({IP: args.input.fullname},{IP: 'ip|required'}), 'IP').catch(function(e) {
-          result.msg = result.msg+e; });
-          if(!minFullname){result.status = 0; }}
-    
-        const maxDescription = await Utils.validate(Utils.setValidation({Description: args.input.description},{Description: 'maxLength:500|required'}), 'Description').catch(function(e) {
-          result.msg = result.msg+", "+e; });
-    
-          if(!maxDescription){result.status = 0; }
-    
-      if(result.status === 0) {return result; }      
-
-  if(args.input.frmtype === 1){
-    const titleExists = await Db.checkValue("SELECT status FROM firewall WHERE (status = 1 AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-if(titleExists > 0){
-result.msg = 'I.P. Address exits'
-result.status = 0; 
-return result;
-}  }  
-
-
-if(args.input.frmtype === 2){
-  const titleExists = await Db.checkValue("SELECT status FROM firewall WHERE (status = 1 AND id <> "+con.escape(parseInt(args.input.id))+" AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-  if(titleExists > 0){
-    result.msg = 'Firewall exits'
-    result.status = 0; 
-    return result;
-  }  
-  await Db.dbUpdate("UPDATE firewall SET status = 2 WHERE (id = "+con.escape(parseInt(args.input.id))+")");
-}
-
-if(result.status === 0){return result;}
-const department = await Db.dbUpdate("INSERT INTO firewall (userid, title, description, domain, inid) VALUES ("+
-con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+
-con.escape(args.input.description)+", "+con.escape(auth.domainName)+", "+con.escape((typeof args.input.id !== 'undefined') ? parseInt(args.input.id) : 0)+")");
-//}
-result.status = 1;
-result.msg = "Done";
-  } // end create firewall
-
-
-if(parseInt(args.input.formid) === 72){ // enter offline message
-//if(checkSub.status === false){	result.status = 0; result.msg = "Subscription Required "; return result;}
-      if (!args.input.description || args.input.description === '') {
-        result.msg = result.msg+" Please enter a message, "; result.status = 0; }
-      
-        const maxDescription = await Utils.validate(Utils.setValidation({Description: args.input.description},{Description: 'maxLength:200|required'}), 'Description').catch(function(e) {
-          result.msg = result.msg+", "+e; });
-    
-          if(!maxDescription){result.status = 0; }
-    
-      if(result.status === 0) {return result; }      
-
-  await Db.dbUpdate("UPDATE offlinetext SET status = 2 WHERE status =1");
-
-await Db.dbUpdate("INSERT INTO offlinetext (userid, description, domain) VALUES ("+
-con.escape(auth.userId)+", "+con.escape(args.input.description)+", "+con.escape(auth.domainName)+")");
-//}
-result.status = 1;
-result.msg = "Done";
-  } // end enter offline message
-
-if(parseInt(args.input.formid) === 74){ // enter connection form title
-if(checkSub.status === false){	result.status = 0; result.msg = "Subscription Required "; return result;}
-      if (!args.input.description || args.input.description === '') {
-        result.msg = result.msg+" Please enter a message, "; result.status = 0; }
-      
-        const maxDescription = await Utils.validate(Utils.setValidation({Description: args.input.description},{Description: 'maxLength:200|required'}), 'Description').catch(function(e) {
-          result.msg = result.msg+", "+e; });
-    
-          if(!maxDescription){result.status = 0; }
-    
-      if(result.status === 0) {return result; }      
-
-  await Db.dbUpdate("UPDATE connectionfrmtext SET status = 2 WHERE status =1");
-
-await Db.dbUpdate("INSERT INTO connectionfrmtext (userid, description, domain) VALUES ("+
-con.escape(auth.userId)+", "+con.escape(args.input.description)+", "+con.escape(auth.domainName)+")");
-//}
-result.status = 1;
-result.msg = "Done";
-  } // end enter connection form title
-
-if(parseInt(args.input.formid) === 30){ // create subscription
-if (!args.input.fullname || args.input.fullname === '') {result.msg = result.msg+"Title, "; result.status = 0; }
-if (!args.input.planid || args.input.planid === '') {result.msg = result.msg+"Subscription Plan, "; result.status = 0; }
-if(isNaN(parseInt(args.input.country)) || parseInt(args.input.country) > 20){result.status = 0; result.msg = result.msg+"Number of Agents is invalid";}
-if(isNaN(parseInt(args.input.planid))){result.status = 0; result.msg = result.msg+"Subscription Plan is invalid";}
-
-if(result.status === 0) {return result; }
-
-
-if(args.input.frmtype === 1){
-const titleExists = await Db.checkValue("SELECT status FROM subscription WHERE (status = 1 AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-    if(titleExists > 0){
-      result.msg = 'Title exits'
-      result.status = 0; 
-      return result;
-    }  }  
-
-
-if(args.input.frmtype === 2){
-    const titleExists = await Db.checkValue("SELECT status FROM subscription WHERE (status = 1 AND id <> "+con.escape(parseInt(args.input.id))+" AND inid <> "+con.escape(parseInt(args.input.id))+" AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-    if(titleExists > 0){
-      result.msg = 'Title exits'
-      result.status = 0; 
-      return result;
-    }  
-    await Db.dbUpdate("UPDATE subscription SET status = 2 WHERE ((id = "+con.escape(parseInt(args.input.id))+" || inid = "+con.escape(parseInt(args.input.id))+"))");
-  }
-  if(result.status === 0){return result;}
-
- //if(args.input.frmtype === 1){
-await Db.dbUpdate("INSERT INTO subscription (userid, title, description, domain, planid, seats, inid, duration) VALUES ("+
-      con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+
-      con.escape(args.input.description)+", "+con.escape(auth.domainName)+", "+con.escape(1)+", "+con.escape(args.input.country)+", "+con.escape((typeof args.input.id !== 'undefined') ? parseInt(args.input.id) : 0)+", "+con.escape(args.input.planid)+")");
-  //}
-  
-
-      result.status = 1;
-      result.msg = "Done";	        return result;  
-  } // end create subscription
-
-  
-
- if(parseInt(args.input.formid) === 62){ // create about
-          //parseInt(args.input.frmtype) === 1 &&  // use to check whether new or edit
-  if (!args.input.fullname || args.input.fullname === '') {
-  result.msg = result.msg+"Title, "; result.status = 0; }
-  
-  if (!args.input.description || args.input.description === '') { 
-  result.msg = result.msg+"Description, "; result.status = 0; }
-  
-  if(args.input.fullname){
-  const minFullname = await Utils.validate(Utils.setValidation({fullname: args.input.fullname},{fullname: 'minLength:2|required'}), 'fullname').catch(function(e) {
-    result.msg = result.msg+e; });
-    if(!minFullname){result.status = 0; }}  
-  if(result.status === 0) {return result; }
-  
-  if(args.input.frmtype === 1){
-  const titleExists = await Db.checkValue("SELECT status FROM department WHERE (status = 1 AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-      if(titleExists > 0){
-        result.msg = 'Department exits'
-        result.status = 0; 
-        return result;
-      }  }  
-  
-     if(args.input.frmtype === 2){
-      agentInid === args.input.id;
-      const titleExists = await Db.checkValue("SELECT status FROM department WHERE (status = 1 AND id <> "+con.escape(parseInt(args.input.id))+" AND title = "+con.escape(args.input.fullname)+") LIMIT 0, 1")
-      if(titleExists > 0){
-        result.msg = 'Department exits'
-        result.status = 0; 
-        return result;
-      }  
-      await Db.dbUpdate("UPDATE department SET status = 2 WHERE ((id = "+con.escape(parseInt(args.input.id))+" || inid = "+con.escape(parseInt(args.input.id))+"))");
-    }
-    if(result.status === 0){return result;}
-   
-    //if(args.input.frmtype === 1){
-      const department = await Db.dbUpdate("INSERT INTO department (userid, title, description, domain, inid) VALUES ("+
-        con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+
-        con.escape(args.input.description)+", "+con.escape(auth.domainName)+", "+con.escape(agentInid)+")");
-    //}
-    
-  
-        result.status = 1;
-        result.msg = "Done"; 
-  } // end create about
-  */
-  // update item status 
       } // end applies to admin
 
 if(parseInt(args.input.frmtype) === 2 && parseInt(args.input.formid) === -3){
@@ -838,123 +363,9 @@ result.status = 1;
 result.msg = "Done";
 return result;  
 }
-/*
-if(parseInt(args.input.formid) === 104){ // create pp
-if(checkSub.status === false){	result.status = 0; result.msg = "Subscription Required "; return result;}
-if (!args.input.planstate || isNaN(parseInt(args.input.planstate))) {
-result.msg = result.msg+"Internal error: C01, "; result.status = 0; }
-if (parseInt(args.input.planstate) === 1) {
-           //parseInt(args.input.frmtype) === 1 &&  // use to check whether new or edit
-      if (!args.input.fullname || args.input.fullname === '') {
-      result.msg = result.msg+"Title, "; result.status = 0; }
-      
-      if (!args.input.planid || isNaN(parseInt(args.input.planid))) { 
-      result.msg = result.msg+"Project, "; result.status = 0; }
-	  
-      if (!args.input.total || isNaN(parseInt(args.input.total))) { 
-      result.msg = result.msg+"Procuring Entity, "; result.status = 0; }
-	  
-      if (!args.input.gender || isNaN(parseInt(args.input.gender))) { 
-      result.msg = result.msg+"Solicitation, "; result.status = 0; }
-	  
-	   if (!args.input.country || isNaN(parseInt(args.input.country))) { 
-      result.msg = result.msg+"Type, "; result.status = 0; }
-	  
-	       
-      if(args.input.fullname){
-      const minFullname = await Utils.validate(Utils.setValidation({fullname: args.input.fullname},{fullname: 'minLength:2|required'}), 'fullname').catch(function(e) { result.msg = result.msg+e; });
-        if(!minFullname){result.status = 0; }}      
-      if(result.status === 0) {return result; }   
-	  
-	    if(args.input.frmtype === 2){
-    await Db.dbUpdate("UPDATE egp_plan SET status = 2 WHERE ((id = "+con.escape(parseInt(args.input.id))+" || inid = "+con.escape(parseInt(args.input.id))+"))");
-  }  
-  if(result.status === 0){return result;}
-  
-      
-        
-        //if(args.input.frmtype === 1){
-          const department = await Db.dbUpdate("INSERT INTO egp_plan (userid, title, description, projectid, inid, solicitationid, type, entityid, planstatus) VALUES ("+
-            con.escape(auth.userId)+", "+con.escape(args.input.fullname)+", "+
-            con.escape(args.input.description)+", "+con.escape(args.input.planid)+", "+con.escape(args.input.id)+", "+con.escape(args.input.gender)+", "+con.escape(args.input.country)+", "+con.escape(args.input.total)+", "+con.escape(args.input.status)+")");
-        //}
-} 
-if (parseInt(args.input.planstate) === 5) {
-if (!args.input.zip || isNaN(parseInt(args.input.zip))) {
-result.msg = result.msg+"Percentage Completion, "; result.status = 0; }
-if(result.status === 0) {return result; }   
-let updateDate = await Db.dbUpdate("UPDATE egp_progress SET status = 2 WHERE planid = "+con.escape(parseInt(args.input.id)));
-if(updateDate){
-const department = await Db.dbUpdate("INSERT INTO egp_progress (userid, planid, progress, inid, amount) VALUES ("+
-con.escape(auth.userId)+", "+con.escape(args.input.id)+", "+con.escape(args.input.zip)+", "+con.escape(args.input.id)+", "+con.escape(args.input.stringsix)+")");
-}}
-
-if (parseInt(args.input.planstate) === 3) {
-let title= "Intent To Award";
-if (!args.input.password || args.input.password === "") { result.msg = result.msg+"Body, "; result.status = 0; return result; }
-if (args.input.string12 && !isNaN(parseInt(args.input.string12))) { 
-if (parseInt(args.input.string12) === 2) { title= "Bid Opening"; }
-if (parseInt(args.input.string12) === 3) { 
-title= args.input.string13.trim();
-
-if (args.input.string13.trim() === "") { 
-result.msg = result.msg+"Title, "; 
-result.status = 0; 
-return result;
-}}
 
 
 
-}
-
-let updateDate = await Db.dbUpdate("UPDATE egp_intent SET status = 2 WHERE planid = "+con.escape(parseInt(args.input.id)));
-if(updateDate){
-await Db.dbUpdate("INSERT INTO egp_intent (userid, planid, description, title) VALUES ("+
-con.escape(auth.userId)+", "+con.escape(args.input.id)+", "+con.escape(args.input.password)+", "+con.escape(title)+")");
-}}
-
-
-if (parseInt(args.input.planstate) === 2) { 
-if (!args.input.domain || args.input.domain === "" || !args.input.province || args.input.province === "") { result.msg = result.msg+"Date error, "; result.status = 0; return result; }
-if (!args.input.description || args.input.description === "") { result.msg = result.msg+"Details, "; result.status = 0; return result; }
-let updateDate = await Db.dbUpdate("UPDATE egp_bidding SET status = 2 WHERE planid = "+con.escape(parseInt(args.input.id)));
-await Db.dbUpdate("UPDATE itemstatus SET status = 2 WHERE tbl = 104 AND rowid= "+con.escape(parseInt(args.input.id)));
-if(updateDate){
-await Db.dbUpdate("INSERT INTO egp_bidding (userid, planid, description, startdate, enddate, starttime, endtime) VALUES ("+con.escape(auth.userId)+", "+con.escape(args.input.id)+", "+con.escape(args.input.description)+", "+con.escape(args.input.stringeigth)+", "+con.escape(args.input.province)+", "+con.escape(args.input.city)+", "+con.escape(args.input.stringnine)+")");
-
-let myStr = args.input.stringone;
-let strArray = myStr.split(",");
-for(var i = 0; i < strArray.length; i++){
-if(args.input.stringone !== "" && strArray.length > 0){
-await Db.dbUpdate("INSERT INTO itemstatus (userid, rowid, tbl, editid) VALUES ("+con.escape(auth.userId)+", "+con.escape(args.input.id)+", "+con.escape(104)+", "+con.escape(strArray[i])+")");}
-}
-    
-
-}
-}
-
-if (parseInt(args.input.planstate) === 4) { 
-if (!args.input.stringseven || args.input.stringseven === "") { result.msg = result.msg+"Award date, "; result.status = 0; return result; }
-if (!args.input.stringthree || args.input.stringthree === '') { result.msg = result.msg+"Awarded to, "; result.status = 0; }
-if(result.status === 0){return result;}
-let updateDate = await Db.dbUpdate("UPDATE egp_award SET status = 2 WHERE planid = "+con.escape(parseInt(args.input.id)));
-if(updateDate && parseInt(args.input.stringthree) !== 0){
-await Db.dbUpdate("INSERT INTO egp_award (userid, planid, awarddate, awardedto, effectivedate, completiondate, amount, actualcompletion) VALUES ("+con.escape(auth.userId)+", "+con.escape(args.input.id)+", "+con.escape(args.input.stringseven)+", "+con.escape(args.input.stringthree)+", "+con.escape(args.input.stringone)+", "+con.escape(args.input.stringtwo)+", "+con.escape(args.input.stringfour)+", "+con.escape(args.input.stringfive)+")");
-}}
-
-
-result.status = 1;
-result.msg = "Done";
-} // end create pp
-if(parseInt(args.input.formid) === 24){
-// update agent availability
-const { tbl, rowid, itemstatus, id = 0 } = args.input;
-Db.itemStatus (tbl, auth.userId, itemstatus, auth.userId, auth.domainName, auth.userId);
-result.status = 1;
-result.msg = "Done";
-return result;         
-}
-*/
 
 if(parseInt(args.input.frmtype) === 2){   
 if(parseInt(args.input.formid) === -1){
@@ -1085,6 +496,9 @@ id: "pubbid"+item.id
 });
 return parsed;} // end bid destials
 
+if(siteListId === 78){  // list upcoming conferences
+return await Db.query("SELECT videoconf.id AS itemId, videoconf.inid, videoconf.title, videoconf.uuid AS id, videoconf.conftype AS address, videoconf.starttime AS city, videoconf.duration AS total, videoconf.startdate AS date, timezone.title AS msg, videoconf.description, confurl.uuid AS fullname FROM videoconf INNER JOIN timezone ON timezone.id = videoconf.timezone INNER JOIN confurl ON (confurl.confid = videoconf.id OR confurl.confid = videoconf.inid) WHERE videoconf.status = 1 AND videoconf.domain = " + con.escape(domain) +" AND videoconf.startdate > CURDATE() ORDER BY videoconf.title ASC" );  } // end COUNTRY list for form
+      
 if(siteListId === 136){ // list settings pub
 let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM module WHERE (groupid = 3 OR id IN (111, 110)) ORDER BY title ASC");
 var parsed = dbresult.map(async function (item) {
@@ -1103,84 +517,7 @@ id: "pub"+item.id
 return parsed;
 } // end list settings pub
 
-  
-/*
-if(siteListId === 120){ // list bid
-let dbresult = await Db.query("SELECT egp_plan.id AS itemId, egp_solicitation.title AS solicitation, egp_type.title AS city, egp_plan.type AS typeid, DATE_FORMAT(egp_bidding.startdate, '%M %d %Y') AS stringone, egp_bidding.starttime AS stringtwo, DATE_FORMAT(egp_bidding.enddate, '%M %d %Y') AS stringthree, egp_bidding.endtime AS stringfour, egp_plan.inid, egp_plan.title, egp_agency.title AS address, egp_bidding.uuid AS id FROM egp_plan INNER JOIN egp_agency ON (egp_agency.id=egp_plan.entityid OR egp_agency.inid=egp_plan.entityid) INNER JOIN egp_solicitation ON (egp_solicitation.id=egp_plan.solicitationid OR egp_solicitation.inid=egp_plan.solicitationid) INNER JOIN egp_bidding ON (egp_bidding.planid= egp_plan.inid OR egp_bidding.planid=egp_plan.id) INNER JOIN egp_type ON (egp_type.id=egp_plan.type OR egp_type.inid=egp_plan.type) WHERE egp_plan.status = 1 AND egp_bidding.enddate > CURDATE() AND egp_agency.status=1 AND egp_type.status=1 AND egp_bidding.status = 1 AND egp_solicitation.status=1 AND (egp_plan.id IN (SELECT rowid FROM itemstatus WHERE tbl = 104 AND itemstatus.status = 1) OR egp_plan.inid IN (SELECT rowid FROM itemstatus WHERE tbl = 104 AND itemstatus.status = 1)) ORDER BY egp_plan.title ASC");
-var parsed = dbresult.map(async function (item) {
-let status = 1;	 
-return {
-  itemId: item.itemId,
-  inid: item.inid,
-  description: "",
-  title: item.title,
-  status: status,
-  domain: "",
-  id: "pubid"+item.id,
-  address: item.address,
-  city: item.city,
-  stringone: item.stringone,
-  stringtwo: item.stringtwo,
-  stringthree: item.stringthree,
-  stringfour: item.stringfour,
-  stringfive: item.solicitation,
-  typeid: item.typeid,
-}
-});
-return parsed;
-} // end list bid
-
-if(siteListId === 135){ // list awarded
-let dbresult = await Db.query("SELECT egp_award.id, egp_plan.id AS itemId, egp_award.amount AS city, DATE_FORMAT(egp_award.awarddate, '%M %d %Y') AS stringone, orgname.title AS stringtwo, egp_plan.title AS address, egp_plan.inid, egp_award.uuid AS id FROM egp_award INNER JOIN egp_plan ON (egp_award.planid=egp_plan.inid OR egp_award.planid=egp_plan.id) INNER JOIN orgname ON (orgname.id=egp_award.awardedto OR orgname.inid=egp_award.awardedto) WHERE egp_plan.status = 1 AND egp_award.status=1 AND orgname.status=1 ORDER BY egp_award.id DESC");
-var parsed = dbresult.map(async function (item) {
-let status = 1;	 
-return {
-  itemId: item.itemId,
-  inid: item.inid,
-  title: item.title,
-  domain: "",
-  id: ("awarded"+item.id),
-  city: item.city,
-  stringone: item.stringone,
-  stringtwo: item.stringtwo,
-  address: item.address,
-}
-});
-return parsed;
-} // end list awarded
-
-
-if(siteListId === 114 || siteListId === 118 || siteListId === 119 || siteListId === 112 || siteListId === 113){  // egp details
-  return await Db.query("SELECT id AS itemId, inid, description, uuid AS id FROM egp_bpplaw WHERE status = 1 AND type =  " + con.escape(parseInt(siteListId)) );  } // end COUNTRY list for form
-
-if(siteListId === 53){ // COUNTRY list for form
-  let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM countries WHERE status = 1 ORDER BY title ASC" );return dbresult;}
-if(siteListId === 96){  // retturn conference details 
-let db = await Db.query("SELECT videoconfparticipants.id AS itemId, videoconf.inid, videoconfparticipants.title, videoconfparticipants.uuid AS id, videoconf.mode AS address, videoconf.starttime AS city, videoconf.duration AS total, videoconf.startdate AS date, videoconf.title AS msg, videoconf.description FROM videoconf INNER JOIN confurl ON (confurl.confid = videoconf.id OR confurl.confid = videoconf.inid) INNER JOIN videoconfparticipants ON (videoconfparticipants.videoconfid = confurl.confid) WHERE videoconf.status = 1 AND videoconfparticipants.status = 1 AND videoconf.domain = " + con.escape(domain) +" AND confurl.uuid = " + con.escape(args.section) +" ORDER BY videoconf.title ASC" ); return db;} // end retturn conference details 
-
-if(siteListId === 106){ // user type list for 
-let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id, officer FROM egp_agency WHERE status = 1  AND (id IN (SELECT rowid FROM itemstatus WHERE tbl=106 AND status=1) OR inid IN (SELECT rowid FROM itemstatus WHERE tbl=106 AND status=1)) ORDER BY title ASC" );  
-var parsed = dbresult.map(async function (item) {
-return {
-itemId: item.itemId,
-inid: item.inid,
-title: item.title,
-id: "pubagency"+item.id,
-city: item.officer
-}
-});
-return parsed;  
-  
-  }
-  
-  
-if(siteListId === 96){  // retturn conference details 
-let db = await Db.query("SELECT videoconfparticipants.id AS itemId, videoconf.inid, videoconfparticipants.title, videoconfparticipants.uuid AS id, videoconf.mode AS address, videoconf.starttime AS city, videoconf.duration AS total, videoconf.startdate AS date, videoconf.title AS msg, videoconf.description FROM videoconf INNER JOIN confurl ON (confurl.confid = videoconf.id OR confurl.confid = videoconf.inid) INNER JOIN videoconfparticipants ON (videoconfparticipants.videoconfid = confurl.confid) WHERE videoconf.status = 1 AND videoconfparticipants.status = 1 AND videoconf.domain = " + con.escape(domain) +" AND confurl.uuid = " + con.escape(args.section) +" ORDER BY videoconf.title ASC" ); return db;} // end retturn conference details 
-*/
-/*
-else if(siteListId === 78 && args.itemid && !isNAN(args.itemid) && args.itemid !== 0 && args.itemid !== "" && args.section && args.section !== "0" && args.section === ""){  // list participants details 
-return await Db.query("SELECT videoconfparticipants.id AS itemId, videoconf.inid, videoconfparticipants.title, videoconf.uuid AS id, videoconf.conftype AS address, videoconf.starttime AS city, videoconf.duration AS total, videoconf.startdate AS date, timezone.title AS msg, videoconf.description FROM videoconf INNER JOIN videoconfparticipants ON (videoconfparticipants.videoconfid = videoconf.id OR videoconfparticipants.videoconfid = videoconf.inid) WHERE videoconf.status = 1 AND videoconf.domain = " + con.escape(domain) +" AND (videoconf.id = " + con.escape(args.section) +" OR videoconf.inid = " + con.escape(args.section) +" ) AND videoconfparticipants.status = 1" ); } // end list participants details 
-*/
+ 
 return emptyResult;	   
 }, // end get list for web site
 sideMenu: async (parent, args, context, info) => { 
@@ -1221,7 +558,7 @@ if(auth.status){
 }
             result = emptyResult;
             let listId = parseInt(args.listid);
- 
+             
          //   if(auth.typeId === 1){// for admin
               if(listId === 2){ // list agents
                 let dbresult = await Db.query("SELECT user.id AS itemId, user.inid AS inid, user.username, user.usernameiv, useprofile.fullname, gender.title, user.uuid AS id, statuscode.title AS usertype, useprofile.phone FROM user INNER JOIN useprofile ON useprofile.uuid = user.uuid INNER JOIN statuscode ON statuscode.id = user.typeid INNER JOIN gender ON gender.id = useprofile.gender WHERE user.status=1 AND user.typeid <> 1 ORDER BY useprofile.fullname ASC");
@@ -1260,16 +597,12 @@ statusD =  await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 
               return parsed;
             } // end list agents
 
-   // end AGENTS subscription
-          /*
-		    if(listId === 58){ // list get number of agents on subscription
-              let agentsdepartment = [];
+            if(listId === 57){ // list AGENTS subscription
                 let tempTotal = {}
-               let hash = {iv:"", content:""}
-                let dbresult = await Db.query("SELECT user.id AS itemId, user.inid AS inid, user.username, user.usernameiv, useprofile.fullname, gender.title, user.uuid AS id FROM user INNER JOIN useprofile ON useprofile.uuid = user.uuid INNER JOIN gender ON gender.id = useprofile.gender WHERE user.domain=" + con.escape(auth.domainName) +" AND user.status=1 AND user.typeid <> 1 AND useprofile.status = 1 AND gender.status = 1 ORDER BY fullname ASC");
+                let dbresult = await Db.query("SELECT user.id AS itemId, user.inid AS inid, user.username, user.usernameiv, useprofile.fullname, gender.title, user.uuid AS id FROM user INNER JOIN useprofile ON useprofile.uuid = user.uuid INNER JOIN gender ON gender.id = useprofile.gender WHERE user.status=1 AND user.typeid <> 1 AND useprofile.status = 1 AND gender.status = 1 ORDER BY fullname ASC");
                 var parsed = dbresult.map(async function (item) {
                let status = null;
-              status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(parseInt(listId))+" AND rowid = "+con.escape(parseInt(item.inid > 0 ? item.inid : item.itemId))+" AND domain = "+con.escape(auth.domainName)+") ORDER BY id DESC LIMIT 0, 1")
+              status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(parseInt(listId))+" AND rowid = "+con.escape(parseInt(item.inid > 0 ? item.inid : item.itemId))+") ORDER BY id DESC LIMIT 0, 1")
           
                   return {
                       id: "sub"+item.id,
@@ -1282,8 +615,9 @@ statusD =  await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 
                   }
               });
               return parsed;
-          } // end get number of agents on subscription
-          */
+          } // end AGENTS subscription
+        
+		
 		  
 		  
 if(listId === 26){ // run analytics
@@ -1316,14 +650,25 @@ return parsed;
 
 if(listId === 12 || listId === 169 || listId === 148 || listId === 152 || listId === 147){ // list departments
 let status2 = 1, status3 = 1, status4 = 1, status5 = 1;
-if(listId === 169){ status2 = 2, status3 = 3, status4 = 7, status5 = 41; }
-let dbresult = await Db.query("SELECT id AS itemId, inid, title, description, uuid AS id, sender, channel, mobile, alertprogress, status, type FROM record WHERE (status = 1 || status = "+con.escape(parseInt(status2))+" || status = "+con.escape(parseInt(status3))+" || status = "+con.escape(parseInt(status4))+" || status = "+con.escape(parseInt(status5))+" ) ORDER BY title ASC");
+if(listId === 169){ status2 = 45, status3 = 46, status4 = 48, status5 = 49; }
+
+let dbresult;
+if(parseInt(auth.typeId) === 1){
+dbresult = await Db.query("SELECT id AS itemId, inid, title, description, uuid AS id, sender, channel, mobile, alertprogress, status, type, DATE_FORMAT(record.date, '%M %d %Y') AS zip FROM record WHERE type= "+con.escape(parseInt(listId))+" AND (status = 1 || status = "+con.escape(parseInt(status2))+" || status = "+con.escape(parseInt(status3))+" || status = "+con.escape(parseInt(status4))+" || status = "+con.escape(parseInt(status5))+" ) ORDER BY title ASC");}
+if(parseInt(auth.typeId) !== 1){
+dbresult = await Db.query("SELECT id AS itemId, inid, title, description, uuid AS id, sender, channel, mobile, alertprogress, status, type, DATE_FORMAT(record.date, '%M %d %Y') AS zip FROM record WHERE type= "+con.escape(parseInt(listId))+" AND userid = "+con.escape(parseInt(auth.typeId))+" AND  (status = 1 || status = "+con.escape(parseInt(status2))+" || status = "+con.escape(parseInt(status3))+" || status = "+con.escape(parseInt(status4))+" || status = "+con.escape(parseInt(status5))+" ) ORDER BY title ASC");}
+
 var parsed = dbresult.map(async function (item) {
-let status = null;
-status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1");
+
+let statuscode = null;
+if(parseInt(listId) === 169){
+statuscode = await getTitle("SELECT title FROM statuscode WHERE status = 1 AND id = "+con.escape(parseInt(item.status))+" LIMIT 0, 1");	
+} 
+
+let status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1");
 
 let channel = ''; 
-if(parseInt(item.channel) > 0){ channel = await getTitle("SELECT title FROM data_channel WHERE status = 1 AND id = "+con.escape(parseInt(item.channel))+" LIMIT 0, 1"); }
+if(parseInt(item.channel) > 0){ channel = await getTitle("SELECT title FROM statuscode WHERE status = 1 AND id = "+con.escape(parseInt(item.channel))+" LIMIT 0, 1"); }
 
 return {
 itemId: item.itemId,
@@ -1337,14 +682,17 @@ stringone: item.mobile,
 stringtwo: item.alertprogress,
 stringfour: item.status,
 stringfive: item.type,
+stringsix: item.zip,
+stringseven: statuscode,
 id: item.id
 }
 });
+console.log(parsed);
 return parsed;
 } // end list department
 
 if(listId === 163){ // list akerts for front end
-let dbresult = await Db.query("SELECT record.id AS itemId, record.inid, record.title, record.description, record.uuid AS id, record.sender, record.channel, DATE_FORMAT(record.date, '%M %d %Y') AS zip, record.status, alert_status.title AS alerttitle FROM record INNER JOIN alert_status ON alert_status.id = record.status WHERE  record.type=192 AND record.userid = " + con.escape(auth.userId)+" ORDER BY record.date DESC");
+let dbresult = await Db.query("SELECT record.id AS itemId, record.inid, record.title, record.description, record.uuid AS id, record.sender, record.channel, DATE_FORMAT(record.date, '%M %d %Y') AS zip, record.status, statuscode.title AS alerttitle FROM record INNER JOIN statuscode ON statuscode.id = record.status WHERE  record.type=192 AND record.userid = " + con.escape(auth.userId)+" ORDER BY record.date DESC");
 
 var parsed = dbresult.map(async function (item) {
 
@@ -1387,95 +735,33 @@ address: item.address
 return parsed;
 } // end list fiscal year
 
-	  /*
-	  if(listId === 123){ // list solicitation
-        let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM egp_solicitation WHERE status = 1 ORDER BY title ASC");
-        var parsed = dbresult.map(async function (item) {
-        let status = 1;
-                 
-          return {
-              itemId: item.itemId,
-              inid: item.inid,
-              description: "",
-              title: item.title,
-              status: status,
-              domain: "",
-              id: item.id
-          }
-      });
-      return parsed;
-    } // end list project
-	 /* if(listId === 146){ // list content type
-        let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM contenttype WHERE status = 1 ORDER BY title ASC");
-        var parsed = dbresult.map(async function (item) {
-        let status = 1;
-                 
-          return {
-              itemId: item.itemId,
-              inid: item.inid,
-              description: "",
-              title: item.title,
-              status: status,
-              domain: "",
-              id: item.id
-          }
-      });
-      return parsed;
-    } // end list project
-	
-		  if(listId === 144){ // list procurement officer
-        let dbresult = await Db.query("SELECT useprofile.userid AS itemId, useprofile.fullname AS title, useprofile.uuid AS id FROM useprofile INNER JOIN user ON (user.id = useprofile.userid) WHERE useprofile.status = 1 AND user.status=1 AND user.typeid =2 ORDER BY useprofile.fullname ASC");
-        var parsed = dbresult.map(async function (item) {
-        let status = 1;
-                 
-          return {
-              itemId: item.itemId,
-              inid: 0,
-              description: "",
-              title: item.title,
-              status: status,
-              domain: "",
-              id: "officerID"+item.id
-          }
-      });
-      return parsed;
-    } // end list project
-    
-	 if(listId === 142){ // list repo type
-        let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM repotype WHERE status = 1 ORDER BY title ASC");
-        var parsed = dbresult.map(async function (item) {
-        let status = 1;
-                 
-          return {
-              itemId: item.itemId,
-              inid: item.inid,
-              description: "",
-              title: item.title,
-              status: status,
-              domain: "",
-              id: item.id
-          }
-      });
-      return parsed;
-    } // end list repo ty[e
-	  if(listId === 124){ // list procurement type
-        let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM egp_type WHERE status = 1 ORDER BY title ASC");
-        var parsed = dbresult.map(async function (item) {
-        let status = 1;
-                 
-          return {
-              itemId: item.itemId,
-              inid: item.inid,
-              description: "",
-              title: item.title,
-              status: status,
-              domain: "",
-              id: item.id
-          }
-      });
-      return parsed;
-    } // end list project
-    */
+
+        if(listId === 106){ // list agency userid = " + con.escape(auth.userId)+"
+	let dbresult;
+	if(parseInt(auth.typeId) === 1){
+    dbresult = await Db.query("SELECT id AS itemId, inid, title, description, domain, officer, uuid AS id FROM egp_agency WHERE status = 1 ORDER BY title ASC");}
+	   else {dbresult = await Db.query("SELECT id AS itemId, inid, title, description, domain, officer, uuid AS id FROM egp_agency WHERE status = 1 AND officer = "+con.escape(parseInt(auth.userId))+" ORDER BY title ASC");}
+		  
+		  
+          var parsed = dbresult.map(async function (item) {
+let status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape(parseInt((item.inid > 0) ? item.inid : item.itemId))+") LIMIT 0, 1") 
+                   
+            return {
+                itemId: item.itemId,
+                inid: item.inid,
+                description: item.description,
+                title: item.title,
+                status: status,
+                domain: item.domain,
+                id: item.id,
+                city: item.officer,
+            }
+        });
+        return parsed;
+      } // end list 
+	  
+	  
+	  
         if(listId === 27){ // list file repo
           let dbresult = await Db.query("SELECT filerepo.id AS itemId, filerepo.inid, filerepo.title, filerepo.description, filerepo.domain, filerepo.uuid AS id, filerepo.typeid AS typeid, repotype.title AS type FROM filerepo INNER JOIN repotype ON repotype.id = filerepo.typeid WHERE filerepo.status=1 ORDER BY filerepo.title ASC");
           var parsed = dbresult.map(async function (item) {
@@ -1495,7 +781,31 @@ return parsed;
         });
         return parsed;
       } // end list file repo
-	  	  
+	  
+if(listId === 78 || listId === 79 || listId === 81){ // list video conf
+let conftype = "video";
+if(listId === 79){ conftype = "podcast";}
+if(listId === 81){ conftype = "webinar";}
+          let dbresult = await Db.query("SELECT videoconf.id AS itemId, videoconf.inid, videoconf.title, videoconf.description, videoconf.uuid AS id, videoconf.starttime AS address, videoconf.duration AS phone, videoconf.startdate AS zip, videoconf.timezone AS total, record AS country, mode AS city, confurl.uuid AS fullname FROM videoconf INNER JOIN confurl ON (confurl.confid = videoconf.id OR confurl.confid = videoconf.inid) WHERE videoconf.status=1 AND videoconf.conftype = "+ con.escape(conftype)+" AND (videoconf.domain = 'def' || videoconf.domain=" + con.escape(auth.domainName) +") ORDER BY videoconf.title ASC");
+          var parsed = dbresult.map(async function (item) {
+          //let status = null;
+
+return {
+itemId: item.itemId,
+inid: item.inid,
+description: item.description,
+title: item.title,
+id: item.id,
+zip: item.zip,
+phone: item.phone, 
+address: item.address,
+city: item.city,
+fullname: item.fullname,
+total: item.total,
+country: item.country,
+} });
+        return parsed;
+      } // end list video conf	 	  
 	   if(listId === 68 || listId === 77){ // list send file repo
 	   let mediaFile = 0;
 let dbresult = await Db.query("SELECT filerepo.id AS itemId, filerepo.inid, filerepo.title, filerepo.description, filerepo.uuid AS id FROM filerepo WHERE mediafile = " + con.escape(mediaFile) +" AND filerepo.status=1 AND filerepo.id IN (SELECT rowid FROM itemstatus WHERE itemstatus.status =1 AND itemstatus.domain=" + con.escape(auth.domainName) +" AND itemstatus.tbl = 27) ORDER BY filerepo.title ASC");
@@ -1521,28 +831,16 @@ subone: parsedD
 return parsed;
 
       } // end list send file repo
-	   if(listId === -2){ // get agent profile
+	
+	
+	
+          if(listId === -2){ // get agent profile
             //let dbresult = await Db.query("SELECT id, inid, fullname, gender, address, city, province, country, phone, uuid FROM useprofile INNER JOIN gender ON (gender.id = useprofile.gender OR gender.inid = useprofile.gender) WHERE useprofile.domain=" + con.escape(auth.domainName) +" AND useprofile.status=1 AND gender.status = 1");
             let dbresult = await Db.query("SELECT useprofile.id AS itemId, useprofile.inid, fullname, zip, gender, address, city, province, country, phone, useprofile.uuid AS id FROM useprofile INNER JOIN gender ON (gender.id = useprofile.gender OR gender.inid = useprofile.gender) WHERE useprofile.status=1 AND gender.status = 1 AND useprofile.userid = " + con.escape(auth.userId)+" ORDER BY id DESC LIMIT 0, 1");
 	 return dbresult;  }
           
-            if(listId === 1){ //list channels
-              //return await Db.query("SELECT id, inid, description, title, uuid FROM channels WHERE status = 1");
-              let dbresult = await Db.query("SELECT id AS itemId, inid, description, title, uuid AS id FROM record WHERE status = 1");
-              var parsed = dbresult.map(async function (item) {
-              let status = null;
-              status = await Db.checkValue("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape((item.inid > 0 ? item.inid : item.itemId))+") LIMIT 0, 1")
-              return {
-                  itemId: item.itemId,
-                  inid: item.inid,
-                  status: status,//itemstatus,
-                  description: item.description,
-                  title: item.title,
-                  id: item.id
-              }
-            })
-            return parsed;
-             }
+       
+	   
 if(listId === 72){ // list offline text
 let text = await Db.query("SELECT description, uuid AS id FROM offlinetext WHERE status = 1");
 return text;
@@ -1571,32 +869,52 @@ let repo = await Db.query("SELECT id FROM itemstatus WHERE status = 1 AND tbl = 
 			total.push(tempTotal);
               return total;
             } // end chat history
-		
+			 if(listId === 30){ // list subscriptios
+            let dbresult = await Db.query("SELECT subscription.uuid AS id, subscription.title, subscription.description, subscriptionplans.title AS province, subscription.id AS typeid, subscription.id AS itemId, subscription.inid AS inid, subscription.duration AS planid FROM subscription INNER JOIN  subscriptionplans ON subscriptionplans.id = subscription.planid WHERE subscription.status=1 AND subscriptionplans.status = 1 ORDER BY subscription.title ASC ");
+
+var parsed = dbresult.map(async function (item) {
+//let currId = (parseInt(item.inid) > 0 ? item.inid : item.itemId);
+let dbresult1 = await Db.query("SELECT date_format(expires, '%Y-%m-%d') AS date FROM payments WHERE status = 1 AND (subid = "+con.escape(parseInt(parseInt(item.inid) > 0 ? item.inid : item.itemId))+") ORDER BY id DESC LIMIT 0, 1");
+			//  let deptTitle = await getTitle("SELECT title FROM department WHERE status = 1 AND (id = "+con.escape(item.department)+" || inid = "+con.escape(item.department)+") AND (domain = "+con.escape(auth.domainName)+" || domain = 'def') LIMIT 0, 1")
+			  
+                 return {
+                   itemId: item.itemId,
+                   inid: item.inid,
+                   date: (dbresult1.length > 0) ? dbresult1[0].date : "",
+                   title: item.title,
+                   id: item.id,
+                   description: item.description,
+                   province: item.province,
+				   typeid: item.typeid,
+				   planid: item.planid
+               }
+               
+           });
+           return parsed;
+            } // end subscriptios
+			  
+			  
+
  if(listId === 15){ // gender list for form
 return await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM gender WHERE status = 1 ORDER BY title ASC" );
  }
 
  
-// if(listId === -15){ // gender list team form
- // return await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM statuscode WHERE status = 1 AND id IN (42,43,44) ORDER BY title ASC");
-// }
+ if(listId === -15){ // gender list team form
+  return await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM statuscode WHERE status = 1 AND id IN (42,43,44) ORDER BY title ASC");
+ }
 
 if(listId === 83){ // time zone list for form
-let dbret;
-if(parseInt(args.sectionid) === 122){
-dbret =  await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM alert_status WHERE status = 1 AND id<>1 ORDER BY title ASC" );}
-
-if(parseInt(args.sectionid) === 163){
-dbret =  await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM record WHERE status = 1 AND type=169 ORDER BY id DESC" );}
-return dbret;
-}
-
+ return await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM timezone WHERE status = 1 ORDER BY title ASC" );}
+ 
+ 
 if(listId === 53){ // COUNTRY list for form
 let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM countries WHERE status = 1 ORDER BY title ASC" );return dbresult;}
-if(listId === 87){ // department list for form
-let dbresult = await Db.query("SELECT id AS itemId, inid, title, uuid AS id FROM department WHERE status = 1 ORDER BY title ASC" );return dbresult;}
 
-       
+
+if(listId === 24){ // default agent status
+return await Db.query("SELECT status FROM itemstatus WHERE (status = 1 AND tbl = "+con.escape(listId)+" AND rowid = "+con.escape(auth.userId)+") LIMIT 0, 1");}
+    
            //res.send(dbresult);
   return dbresult;
           }},
