@@ -1,0 +1,39 @@
+.ew_footer {padding-left:7%; padding-right:7%; margin:0 auto !important; padding-bottom:0.5%; background-color:#101110; color:#F2F2F2}
+.graphConAbsoulte {position:absolute !important; width:100% !important; height:100% !important;}
+.defpad {padding-left:7%; padding-right:7%}
+.ew_footer_1 {padding-left:7%; padding-right:7%; margin:0 auto !important; padding-bottom:0.5%; padding-top:5%; background-color:#090909; color:#F2F2F2}
+.foot_logo_section {border-top:1px solid #716F6F; padding-top:1%}
+.footer_terms {color:#8D8989; font-size:0.8em !important;}
+.footer_terms_1 {color:#8D8989; font-size:0.8em !important; border-left:1px groove #6B6868; padding-left:1.4%; padding-right:1.4%; margin-left:1.4%}
+.footer_title {text-transform:capitalize;}
+.social_section {max-width:20%}
+.footer_links {color:#B3ADAD; text-transform:capitalize}
+.footer_links_title {color:#F2F0F0; font-weight:bold;  text-transform:capitalize; font-size:18px;}
+.icon {color:#ED6C0E !important; font-size:16px; border:1px solid #ED6C0E !important; padding:3%; padding-right:4%; padding-left:4%}
+.roeCon {margin-bottom:8%}
+.icon_home {color:#FB9F1D; font-size:24px}
+.chart_wrapper {border:1px solid #D5D9DA}
+.chart_title {background-color:#114249; font-weight:bold; font-size:16px; color:#FFFFFF}
+.chart_title_1 {background-color:#D8D8D8; font-weight:bold; font-size:16px; color:#333333}
+.chart_con {background-color:#ffffff !important; color:#191A1A}
+.view_full {font-size:11px; font-weight:bold; color:#114249; border-top:1px solid #DFDFDF; cursor:pointer}
+.case_figure {color:#0000FF; font-size:18px}
+.homePageLead {font-size:24px !important;; font-weight:bold !important;}
+.partner_logo {background-color:#ffffff !important;}
+.icon_1 {color:#42BD2A}
+.intro_txt {border-bottom:2px solid #F3F3F3; font-size:18px}
+.intro_title {color:#11D4EB; font-size:28px; font-family:Verdana, Arial, Helvetica, sans-serif; font-weight:bold}
+.intro_title_1 {color:#11D4EB; font-size:20px; font-family:Verdana, Arial, Helvetica, sans-serif; font-weight:bold}
+.footer_date {color:#42BD2A; font-size:0.8em}
+.promoted {color:#1F1F1E; text-transform:uppercase; font-size:12px; background-color:#FBE167; font-weight:bold; text-align:center}
+.footer_con {padding-right:5%}
+.divider {border-bottom:2px solid #FFFFFF}
+.divider_1 {border-bottom:2px solid #212120}
+.newsletter {padding-left:10%}
+.top_menu {color:#000000; font-size:14px; font-weight:bold; text-transform:uppercase}
+.involved {background-color:#FC7B08; color:#FFFFFF;}
+.foot_map_bg {background-image:url(bg.png); background-size: cover; min-height: 300px;}
+.foot_map_content {background: rgba(51, 49, 49, 0.9); color:#FFFFFF; padding-left:10%; padding-right:10%; padding-bottom:4%; padding-top:3%; text-align:center; min-height: 300px;}
+.visio_home {font-size:20px; font-weight:bold; text-align:center;}
+.topform {margin-left:20%; margin-right:20%}
+.formCon {font-size: 0.9em !important;}
